@@ -1,0 +1,1 @@
+# dotnet-outbox-inbox-pattern
