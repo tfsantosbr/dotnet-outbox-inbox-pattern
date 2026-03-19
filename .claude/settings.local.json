@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(docker exec:*)",
+      "Bash(dotnet ef:*)",
+      "Bash(mkdir -p \"C:/Users/Tiago Santos/Projetos/github/dotnet-outbox-inbox-pattern/.claude/skills/add-migration\")",
+      "Bash(mv \"C:/Users/Tiago Santos/Projetos/github/dotnet-outbox-inbox-pattern/.claude/commands/add-migration.md\" \"C:/Users/Tiago Santos/Projetos/github/dotnet-outbox-inbox-pattern/.claude/skills/add-migration/SKILL.md\")",
+      "Bash(find 'C:/Users/Tiago Santos/Projetos/github/dotnet-outbox-inbox-pattern' -not -path */obj/* -not -path */bin/* -type f)",
+      "Bash(grep -E '\\\\.\\(cs|csproj|yml|json\\)$')",
+      "Bash(grep -E '\\\\.\\(sln|slnx\\)$')",
+      "Bash(dotnet build:*)"
+    ]
+  }
+}

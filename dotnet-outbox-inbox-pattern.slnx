@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/shared/">
+    <Project Path="shared/Shared.Contracts/Shared.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Inventory/">
+    <Project Path="src/Inventory/Inventory.Consumer/Inventory.Consumer.csproj" />
+  </Folder>
+  <Folder Name="/src/Notification/">
+    <Project Path="src/Notification/Notification.Consumer/Notification.Consumer.csproj" />
+  </Folder>
+  <Folder Name="/src/Orders/">
+    <Project Path="src/Orders/Orders.API/Orders.API.csproj" />
+  </Folder>
+</Solution>
