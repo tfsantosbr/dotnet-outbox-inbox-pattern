@@ -2,7 +2,7 @@ using Orders.API.Infrastructure;
 using Shared.Contracts.Events;
 using Shared.Messaging;
 
-namespace Orders.API.Application.Orders;
+namespace Orders.API.Application.Orders.Commands;
 
 public class CreateOrderCommandHandler(OrdersDbContext dbContext, IMessageBus messageBus)
 {

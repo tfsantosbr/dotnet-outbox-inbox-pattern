@@ -3,6 +3,7 @@
     <Project Path="shared/Shared.Contracts/Shared.Contracts.csproj" />
     <Project Path="shared/Shared.Messaging/Shared.Messaging.csproj" />
   </Folder>
+  <Folder Name="/shared/Outbox/" />
   <Folder Name="/src/" />
   <Folder Name="/src/Inventory/">
     <Project Path="src/Inventory/Inventory.Consumer/Inventory.Consumer.csproj" />
