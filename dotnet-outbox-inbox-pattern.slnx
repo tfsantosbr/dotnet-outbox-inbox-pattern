@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/items/">
     <File Path="docker-compose.yml" />
+    <File Path="README.md" />
   </Folder>
   <Folder Name="/shared/">
     <Project Path="shared/Shared.Contracts/Shared.Contracts.csproj" />
@@ -13,6 +14,12 @@
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Orders.API.http" />
+  </Folder>
+  <Folder Name="/shared/Outbox/">
+    <File Path="../../tfsdigital/shared-platform/libs/Outbox/README.md" />
+    <Project Path="../../tfsdigital/shared-platform/libs/Outbox/Shared.Outbox.Abstractions/Shared.Outbox.Abstractions.csproj" />
+    <Project Path="../../tfsdigital/shared-platform/libs/Outbox/Shared.Outbox.Tests/Shared.Outbox.Tests.csproj" />
+    <Project Path="../../tfsdigital/shared-platform/libs/Outbox/Shared.Outbox/Shared.Outbox.csproj" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Inventory/">
