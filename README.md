@@ -39,7 +39,62 @@ amqp://guest:guest@localhost:5672
 
 #### RabbitMQ Management Dashboard
 
-http://localhost:15672
+<http://localhost:15672>
 
 - Username: `guest`
 - Password: `guest`
+
+## Running locally (without Docker)
+
+**Pre-requisite:** PostgreSQL and RabbitMQ must be running. The easiest way is to start only the infrastructure containers:
+
+```bash
+docker compose up postgres rabbitmq -d
+```
+
+Open three separate terminals and run each service:
+
+### Terminal 1 — Orders API
+
+```bash
+cd src/Orders/Orders.API
+dotnet run
+```
+
+### Terminal 2 — Inventory Consumer
+
+```bash
+cd src/Inventory/Inventory.Consumer
+dotnet run
+```
+
+### Terminal 3 — Notification Consumer
+
+```bash
+cd src/Notification/Notification.Consumer
+dotnet run
+```
+
+The Orders API will be available at `http://localhost:5000` (or the port shown in the terminal output after startup).
+
+## Testing the endpoint
+
+### Using the `.http` file
+
+Open `tests/Orders.API.http` in your IDE and send the request directly.
+
+### Using cURL
+
+```bash
+curl -X POST http://localhost:5176/orders \
+  -H "Content-Type: application/json" \
+  -d '{"customerId": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "totalAmount": 150.00}'
+```
+
+Expected response (`201 Created`):
+
+```json
+{
+  "id": "<generated-order-id>"
+}
+```

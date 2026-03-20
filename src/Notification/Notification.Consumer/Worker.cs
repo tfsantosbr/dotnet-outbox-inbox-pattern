@@ -2,20 +2,21 @@ using Notification.Consumer.Consumers;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Shared.Contracts.Events;
+using Shared.Messaging.Connection;
 using System.Text.Json;
 
 namespace Notification.Consumer;
 
-public class Worker(IConnection connection, OrderCreatedConsumer consumer) : BackgroundService
+public class Worker(IMessageBusConnectionFactory connectionFactory, OrderCreatedConsumer consumer) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var connection = await connectionFactory.CreateConnectionAsync(stoppingToken);
         var channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
         await channel.ExchangeDeclareAsync(
             exchange: "order-created",
             type: ExchangeType.Fanout,
-            durable: true,
             cancellationToken: stoppingToken);
 
         await channel.QueueDeclareAsync(

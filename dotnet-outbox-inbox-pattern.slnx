@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/items/">
+    <File Path="docker-compose.yml" />
+  </Folder>
   <Folder Name="/shared/">
     <Project Path="shared/Shared.Contracts/Shared.Contracts.csproj" />
   </Folder>
@@ -7,6 +10,9 @@
     <Project Path="../../tfsdigital/shared-platform/libs/Messaging/Shared.Messaging.Abstractions/Shared.Messaging.Abstractions.csproj" />
     <Project Path="../../tfsdigital/shared-platform/libs/Messaging/Shared.Messaging.Tests/Shared.Messaging.Tests.csproj" />
     <Project Path="../../tfsdigital/shared-platform/libs/Messaging/Shared.Messaging/Shared.Messaging.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <File Path="tests/Orders.API.http" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Inventory/">

@@ -45,9 +45,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
-      RabbitMQ__Host: rabbitmq
-      RabbitMQ__Username: guest
-      RabbitMQ__Password: guest
+      ConnectionStrings__RabbitMQ: "amqp://guest:guest@rabbitmq:5672/"
     ports:
       - "8080:8080"
     depends_on:
@@ -65,9 +63,7 @@ services:
     environment:
       DOTNET_ENVIRONMENT: Production
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
-      RabbitMQ__Host: rabbitmq
-      RabbitMQ__Username: guest
-      RabbitMQ__Password: guest
+      ConnectionStrings__RabbitMQ: "amqp://guest:guest@rabbitmq:5672/"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -81,9 +77,7 @@ services:
     environment:
       DOTNET_ENVIRONMENT: Production
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
-      RabbitMQ__Host: rabbitmq
-      RabbitMQ__Username: guest
-      RabbitMQ__Password: guest
+      ConnectionStrings__RabbitMQ: "amqp://guest:guest@rabbitmq:5672/"
     depends_on:
       rabbitmq:
         condition: service_healthy

@@ -2,25 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using Notification.Consumer;
 using Notification.Consumer.Consumers;
 using Notification.Consumer.Infrastructure;
-using RabbitMQ.Client;
+using Shared.Messaging.Extensions;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AddDbContext<NotificationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
 
-builder.Services.AddSingleton<IConnection>(sp =>
-{
-    var config = builder.Configuration.GetSection("RabbitMQ");
-    var factory = new ConnectionFactory
-    {
-        HostName = config["Host"] ?? "localhost",
-        UserName = config["Username"] ?? "guest",
-        Password = config["Password"] ?? "guest"
-    };
-    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
-});
-
+builder.Services.AddMessagingServices();
 builder.Services.AddSingleton<OrderCreatedConsumer>();
 builder.Services.AddHostedService<Worker>();
 
