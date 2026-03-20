@@ -8,7 +8,6 @@
     <Project Path="../../tfsdigital/shared-platform/libs/Messaging/Shared.Messaging.Tests/Shared.Messaging.Tests.csproj" />
     <Project Path="../../tfsdigital/shared-platform/libs/Messaging/Shared.Messaging/Shared.Messaging.csproj" />
   </Folder>
-  <Folder Name="/shared/Outbox/" />
   <Folder Name="/src/" />
   <Folder Name="/src/Inventory/">
     <Project Path="src/Inventory/Inventory.Consumer/Inventory.Consumer.csproj" />
