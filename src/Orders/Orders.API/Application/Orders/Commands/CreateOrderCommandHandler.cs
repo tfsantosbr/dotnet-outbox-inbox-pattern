@@ -1,8 +1,10 @@
 using Orders.API.Infrastructure;
 using Orders.API.Infrastructure.Messaging;
+
+
 using Shared.Contracts.Events;
 
-namespace Orders.API.Application.Orders;
+namespace Orders.API.Application.Orders.Commands;
 
 public class CreateOrderCommandHandler(OrdersDbContext dbContext, RabbitMqPublisher publisher)
 {

@@ -1,8 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using Orders.API.Application.Orders;
+
+using Orders.API.Application.Orders.Commands;
 using Orders.API.Endpoints;
 using Orders.API.Infrastructure;
 using Orders.API.Infrastructure.Messaging;
+
+
 using RabbitMQ.Client;
 
 var builder = WebApplication.CreateBuilder(args);

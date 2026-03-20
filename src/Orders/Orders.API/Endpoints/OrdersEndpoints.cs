@@ -1,4 +1,4 @@
-using Orders.API.Application.Orders;
+using Orders.API.Application.Orders.Commands;
 
 namespace Orders.API.Endpoints;
 

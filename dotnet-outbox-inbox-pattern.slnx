@@ -2,6 +2,13 @@
   <Folder Name="/shared/">
     <Project Path="shared/Shared.Contracts/Shared.Contracts.csproj" />
   </Folder>
+  <Folder Name="/shared/Messaging/">
+    <File Path="../../tfsdigital/shared-platform/libs/Messaging/README.md" />
+    <Project Path="../../tfsdigital/shared-platform/libs/Messaging/Shared.Messaging.Abstractions/Shared.Messaging.Abstractions.csproj" />
+    <Project Path="../../tfsdigital/shared-platform/libs/Messaging/Shared.Messaging.Tests/Shared.Messaging.Tests.csproj" />
+    <Project Path="../../tfsdigital/shared-platform/libs/Messaging/Shared.Messaging/Shared.Messaging.csproj" />
+  </Folder>
+  <Folder Name="/shared/Outbox/" />
   <Folder Name="/src/" />
   <Folder Name="/src/Inventory/">
     <Project Path="src/Inventory/Inventory.Consumer/Inventory.Consumer.csproj" />
