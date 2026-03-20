@@ -1,12 +1,10 @@
 using Orders.API.Infrastructure;
-using Orders.API.Infrastructure.Messaging;
-
-
 using Shared.Contracts.Events;
+using Shared.Messaging;
 
 namespace Orders.API.Application.Orders.Commands;
 
-public class CreateOrderCommandHandler(OrdersDbContext dbContext, RabbitMqPublisher publisher)
+public class CreateOrderCommandHandler(OrdersDbContext dbContext, IMessageBus messageBus)
 {
     public async Task<Guid> HandleAsync(CreateOrderCommand command)
     {
@@ -20,7 +18,7 @@ public class CreateOrderCommandHandler(OrdersDbContext dbContext, RabbitMqPublis
         await dbContext.SaveChangesAsync();
 
         var @event = new OrderCreatedEvent(order.Id, order.CustomerId, order.TotalAmount, order.CreatedOnUtc);
-        await publisher.PublishAsync(@event, "order-created");
+        await messageBus.PublishAsync(@event, "order-created");
 
         return order.Id;
     }
