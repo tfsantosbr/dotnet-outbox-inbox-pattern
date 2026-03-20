@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/shared/">
     <Project Path="shared/Shared.Contracts/Shared.Contracts.csproj" />
+    <Project Path="shared/Shared.Messaging/Shared.Messaging.csproj" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Inventory/">

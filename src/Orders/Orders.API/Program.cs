@@ -2,27 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using Orders.API.Application.Orders;
 using Orders.API.Endpoints;
 using Orders.API.Infrastructure;
-using Orders.API.Infrastructure.Messaging;
-using RabbitMQ.Client;
+using Shared.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<OrdersDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
 
-builder.Services.AddSingleton<IConnection>(sp =>
-{
-    var config = builder.Configuration.GetSection("RabbitMQ");
-    var factory = new ConnectionFactory
-    {
-        HostName = config["Host"] ?? "localhost",
-        UserName = config["Username"] ?? "guest",
-        Password = config["Password"] ?? "guest"
-    };
-    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
-});
-
-builder.Services.AddSingleton<RabbitMqPublisher>();
+builder.Services.AddMessagingServices(builder.Configuration);
 builder.Services.AddScoped<CreateOrderCommandHandler>();
 
 var app = builder.Build();
