@@ -7,19 +7,13 @@
     <Project Path="shared/Contracts/Shared.Contracts/Shared.Contracts.csproj" />
   </Folder>
   <Folder Name="/shared/Messaging/">
-    <File Path="../../tfsdigital/shared-platform/libs/Messaging/README.md" />
-    <Project Path="../../tfsdigital/shared-platform/libs/Messaging/Shared.Messaging.Abstractions/Shared.Messaging.Abstractions.csproj" />
-    <Project Path="../../tfsdigital/shared-platform/libs/Messaging/Shared.Messaging.Tests/Shared.Messaging.Tests.csproj" />
-    <Project Path="../../tfsdigital/shared-platform/libs/Messaging/Shared.Messaging/Shared.Messaging.csproj" />
+    <File Path="shared/Messaging/README.md" />
+    <Project Path="shared/Messaging/Shared.Messaging.Abstractions/Shared.Messaging.Abstractions.csproj" />
+    <Project Path="shared/Messaging/Shared.Messaging.RabbitMQ/Shared.Messaging.RabbitMQ.csproj" />
+    <Project Path="shared/Messaging/Shared.Messaging.RabbitMQ.Tests/Shared.Messaging.RabbitMQ.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Orders.API.http" />
-  </Folder>
-  <Folder Name="/shared/Outbox/">
-    <File Path="../../tfsdigital/shared-platform/libs/Outbox/README.md" />
-    <Project Path="../../tfsdigital/shared-platform/libs/Outbox/Shared.Outbox.Abstractions/Shared.Outbox.Abstractions.csproj" />
-    <Project Path="../../tfsdigital/shared-platform/libs/Outbox/Shared.Outbox.Tests/Shared.Outbox.Tests.csproj" />
-    <Project Path="../../tfsdigital/shared-platform/libs/Outbox/Shared.Outbox/Shared.Outbox.csproj" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Inventory/">
