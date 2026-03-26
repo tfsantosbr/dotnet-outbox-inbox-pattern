@@ -10,7 +10,8 @@
       "Bash(grep -E '\\\\.\\(cs|csproj|yml|json\\)$')",
       "Bash(grep -E '\\\\.\\(sln|slnx\\)$')",
       "Bash(dotnet build:*)",
-      "Bash(dotnet test:*)"
+      "Bash(rsync -av --exclude='bin/' --exclude='obj/' \"/c/Users/Tiago Santos/Projetos/github/dotnet-outbox-inbox-pattern/shared/Messaging/\" \"/c/Users/Tiago Santos/Projetos/github/dotnet-outbox-inbox-pattern/.claude/worktrees/practical-payne/shared/Messaging/\")",
+      "Bash(SRC=\"/c/Users/Tiago Santos/Projetos/github/dotnet-outbox-inbox-pattern/shared/Messaging\" DST=\"/c/Users/Tiago Santos/Projetos/github/dotnet-outbox-inbox-pattern/.claude/worktrees/practical-payne/shared/Messaging\" __NEW_LINE_82bdddf089880668__ find \"$SRC\" -type f ! -path '*/bin/*' ! -path '*/obj/*')"
     ]
   }
 }
