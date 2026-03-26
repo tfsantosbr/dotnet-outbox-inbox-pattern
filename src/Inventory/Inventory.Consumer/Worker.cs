@@ -2,12 +2,12 @@ using Inventory.Consumer.Consumers;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Shared.Contracts.Events;
-using Shared.Messaging.Connection;
+using Shared.Messaging.RabbitMQ.Connection;
 using System.Text.Json;
 
 namespace Inventory.Consumer;
 
-public class Worker(IMessageBusConnectionFactory connectionFactory, OrderCreatedConsumer consumer) : BackgroundService
+public class Worker(IRabbitMqConnectionFactory connectionFactory, OrderCreatedConsumer consumer) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
