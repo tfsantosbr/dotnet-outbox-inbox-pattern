@@ -1,6 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Shared.Messaging.Abstractions;
 using Shared.Messaging.RabbitMQ.Connection;
+using Shared.Messaging.RabbitMQ.Consumers;
 using Shared.Messaging.RabbitMQ.Options;
 
 namespace Shared.Messaging.RabbitMQ.Extensions;
@@ -17,6 +20,25 @@ public static class RabbitMqMessagingExtensions
         builder.Services.AddSingleton(options);
         builder.Services.AddSingleton<IRabbitMqConnectionFactory, RabbitMqConnectionFactory>();
         builder.Services.AddScoped<IMessageBus, RabbitMqMessageBus>();
+
+        return builder;
+    }
+
+    public static MessagingBuilder AddConsumer<TConsumer, TMessage>(
+        this MessagingBuilder builder,
+        Action<ConsumerOptions> configure)
+        where TConsumer : class, IMessageConsumer<TMessage>
+    {
+        var options = new ConsumerOptions();
+        configure(options);
+
+        builder.Services.AddScoped<TConsumer>();
+        builder.Services.AddHostedService(sp =>
+            new RabbitMqConsumerWorker<TMessage, TConsumer>(
+                sp.GetRequiredService<IRabbitMqConnectionFactory>(),
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                options,
+                sp.GetRequiredService<ILogger<RabbitMqConsumerWorker<TMessage, TConsumer>>>()));
 
         return builder;
     }

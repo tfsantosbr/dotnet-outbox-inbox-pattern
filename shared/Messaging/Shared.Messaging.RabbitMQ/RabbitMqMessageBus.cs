@@ -1,6 +1,7 @@
 using RabbitMQ.Client;
 using Shared.Messaging.Abstractions;
 using Shared.Messaging.RabbitMQ.Connection;
+using RmqExchangeType = RabbitMQ.Client.ExchangeType;
 using System.Text;
 
 namespace Shared.Messaging.RabbitMQ;
@@ -24,7 +25,7 @@ internal sealed class RabbitMqMessageBus(IRabbitMqConnectionFactory connectionFa
 
         await channel.ExchangeDeclareAsync(
             destination,
-            ExchangeType.Fanout,
+            RmqExchangeType.Fanout,
             cancellationToken: cancellationToken
         );
 
