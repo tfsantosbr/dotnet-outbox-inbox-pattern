@@ -9,7 +9,8 @@
       "Bash(find 'C:/Users/Tiago Santos/Projetos/github/dotnet-outbox-inbox-pattern' -not -path */obj/* -not -path */bin/* -type f)",
       "Bash(grep -E '\\\\.\\(cs|csproj|yml|json\\)$')",
       "Bash(grep -E '\\\\.\\(sln|slnx\\)$')",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)"
     ]
   }
 }
