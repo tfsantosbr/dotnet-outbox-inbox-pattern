@@ -1,8 +1,9 @@
-@baseUrl = http://localhost:8080
+@baseUrl = http://localhost:5176
 
 ### Create Order
 POST {{baseUrl}}/orders
 Content-Type: application/json
+X-Correlation-ID: {{$guid}}
 
 {
   "customerId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",

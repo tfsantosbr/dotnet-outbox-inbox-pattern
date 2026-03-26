@@ -8,7 +8,8 @@ public class OrderCreatedConsumer(ILogger<OrderCreatedConsumer> logger)
 {
     public async Task ConsumeAsync(OrderCreatedEvent message, IMessageContext context, CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("[Notification] Order received: {OrderId}", message.OrderId);
+        context.Headers.TryGetValue("X-Correlation-Id", out var correlationId);
+        logger.LogInformation("[Notification] Order received: {OrderId} CorrelationId: {CorrelationId}", message.OrderId, correlationId ?? "unknown");
         await context.AckAsync(cancellationToken: cancellationToken);
     }
 }

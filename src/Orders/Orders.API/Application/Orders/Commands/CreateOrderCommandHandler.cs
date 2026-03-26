@@ -7,7 +7,7 @@ namespace Orders.API.Application.Orders.Commands;
 
 public class CreateOrderCommandHandler(OrdersDbContext dbContext, IMessageBus messageBus)
 {
-    public async Task<Guid> HandleAsync(CreateOrderCommand command)
+    public async Task<Guid> HandleAsync(CreateOrderCommand command, string correlationId)
     {
         var order = new Order(
             Guid.NewGuid(),
@@ -19,7 +19,8 @@ public class CreateOrderCommandHandler(OrdersDbContext dbContext, IMessageBus me
         await dbContext.SaveChangesAsync();
 
         var @event = new OrderCreatedEvent(order.Id, order.CustomerId, order.TotalAmount, order.CreatedOnUtc);
-        await messageBus.Publish(JsonSerializer.Serialize(@event), "order-created");
+        var headers = new Dictionary<string, string> { { "X-Correlation-Id", correlationId } };
+        await messageBus.Publish(JsonSerializer.Serialize(@event), "order-created", headers);
 
         return order.Id;
     }

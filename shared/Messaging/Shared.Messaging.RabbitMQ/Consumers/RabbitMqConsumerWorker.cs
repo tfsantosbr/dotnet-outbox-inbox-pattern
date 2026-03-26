@@ -60,7 +60,7 @@ internal sealed class RabbitMqConsumerWorker<TMessage, TConsumer>(
                 {
                     using var scope = scopeFactory.CreateScope();
                     var consumer = scope.ServiceProvider.GetRequiredService<TConsumer>();
-                    var context = new RabbitMqMessageContext(channel, ea.DeliveryTag);
+                    var context = new RabbitMqMessageContext(channel, ea.DeliveryTag, ea.BasicProperties.Headers);
                     await consumer.ConsumeAsync(message, context, stoppingToken);
                 }
             }

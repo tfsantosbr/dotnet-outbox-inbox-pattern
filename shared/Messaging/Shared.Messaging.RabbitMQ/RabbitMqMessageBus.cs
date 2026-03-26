@@ -20,7 +20,7 @@ internal sealed class RabbitMqMessageBus(IRabbitMqConnectionFactory connectionFa
 
         var properties = new BasicProperties
         {
-            Headers = headers?.ToDictionary(h => h.Key, h => (object?)h.Value.ToString()),
+            Headers = headers?.ToDictionary(h => h.Key, h => (object?)h.Value),
         };
 
         await channel.ExchangeDeclareAsync(
