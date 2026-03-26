@@ -13,7 +13,7 @@ builder.Services.AddDbContext<InventoryDbContext>(options =>
 builder.Services.AddMessaging()
     .UseRabbitMq(options =>
         options.ConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")!)
-    .AddConsumer<OrderCreatedConsumer, OrderCreatedEvent>(config =>
+    .AddConsumer<OrderCreatedConsumer, OrderCreatedIntegrationEvent>(config =>
     {
         config.Exchange = "order-created";
         config.Queue = "inventory.order-created";

@@ -1,6 +1,8 @@
 using Orders.API.Infrastructure;
+
 using Shared.Contracts.Events;
 using Shared.Messaging.Abstractions;
+
 using System.Text.Json;
 
 namespace Orders.API.Application.Orders.Commands;
@@ -10,7 +12,7 @@ public class CreateOrderCommandHandler(OrdersDbContext dbContext, IMessageBus me
     public async Task<Guid> HandleAsync(CreateOrderCommand command, string correlationId)
     {
         var order = new Order(
-            Guid.NewGuid(),
+            Guid.CreateVersion7(),
             command.CustomerId,
             DateTime.UtcNow,
             command.TotalAmount);
@@ -18,7 +20,16 @@ public class CreateOrderCommandHandler(OrdersDbContext dbContext, IMessageBus me
         dbContext.Orders.Add(order);
         await dbContext.SaveChangesAsync();
 
-        var @event = new OrderCreatedEvent(order.Id, order.CustomerId, order.TotalAmount, order.CreatedOnUtc);
+        var @event = new OrderCreatedIntegrationEvent(
+            orderId: order.Id,
+            customerId: order.CustomerId,
+            totalAmount: order.TotalAmount,
+            occurredOnUtc: order.CreatedOnUtc,
+            correlationId: correlationId,
+            causationId: order.Id.ToString(),
+            source: "Orders.API"
+            );
+
         var headers = new Dictionary<string, string> { { "X-Correlation-Id", correlationId } };
         await messageBus.Publish(JsonSerializer.Serialize(@event), "order-created", headers);
 
