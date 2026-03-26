@@ -3,7 +3,8 @@
     <File Path="docker-compose.yml" />
     <File Path="README.md" />
   </Folder>
-  <Folder Name="/shared/">
+  <Folder Name="/shared/" />
+  <Folder Name="/shared/Contracts/">
     <Project Path="shared/Contracts/Shared.Contracts/Shared.Contracts.csproj" />
   </Folder>
   <Folder Name="/shared/Messaging/">
