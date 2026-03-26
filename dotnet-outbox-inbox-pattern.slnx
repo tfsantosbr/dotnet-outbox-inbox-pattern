@@ -4,7 +4,7 @@
     <File Path="README.md" />
   </Folder>
   <Folder Name="/shared/">
-    <Project Path="shared/Shared.Contracts/Shared.Contracts.csproj" />
+    <Project Path="shared/Contracts/Shared.Contracts/Shared.Contracts.csproj" />
   </Folder>
   <Folder Name="/shared/Messaging/">
     <File Path="../../tfsdigital/shared-platform/libs/Messaging/README.md" />

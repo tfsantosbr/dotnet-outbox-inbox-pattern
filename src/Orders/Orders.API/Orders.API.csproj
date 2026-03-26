@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\shared\Shared.Contracts\Shared.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\shared\Contracts\Shared.Contracts\Shared.Contracts.csproj" />
     <ProjectReference Include="..\..\..\..\..\tfsdigital\shared-platform\libs\Messaging\Shared.Messaging\Shared.Messaging.csproj" />
   </ItemGroup>
 
