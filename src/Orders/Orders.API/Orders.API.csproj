@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\shared\Contracts\Shared.Contracts\Shared.Contracts.csproj" />
     <ProjectReference Include="..\..\..\shared\Messaging\Shared.Messaging.RabbitMQ\Shared.Messaging.RabbitMQ.csproj" />
+    <ProjectReference Include="..\..\..\shared\Outbox\Shared.Outbox\Shared.Outbox.csproj" />
   </ItemGroup>
 
 </Project>

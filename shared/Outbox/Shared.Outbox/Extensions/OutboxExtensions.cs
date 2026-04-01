@@ -19,7 +19,8 @@ public static class OutboxExtensions
         string moduleName,
         string connectionString,
         int intervalInSeconds,
-        int messagesBatchSize
+        int messagesBatchSize,
+        string tableName = "OutboxMessages"
     )
         where TDbContext : DbContext, IOutboxDbContext
     {
@@ -30,6 +31,8 @@ public static class OutboxExtensions
             var settings = new OutboxSettings
             {
                 ConnectionString = connectionString,
+                Schema = moduleName,
+                TableName = tableName,
                 IntervalInSeconds = intervalInSeconds,
                 MessagesBatchSize = messagesBatchSize,
             };

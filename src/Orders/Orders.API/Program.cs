@@ -4,14 +4,28 @@ using Orders.API.Endpoints;
 using Orders.API.Infrastructure;
 using Shared.Messaging.Abstractions.Extensions;
 using Shared.Messaging.RabbitMQ.Extensions;
+using Shared.Outbox.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<OrdersDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
 
+// Messaging
+
 builder.Services.AddMessaging().UseRabbitMq(options =>
     options.ConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")!);
+
+// Outbox
+
+builder.Services.AddOutboxServices<OrdersDbContext>(
+    moduleName: "orders",
+    connectionString: builder.Configuration.GetConnectionString("Database")!,
+    intervalInSeconds: 10,
+    messagesBatchSize: 30,
+    tableName: "outbox_messages"
+);
+
 builder.Services.AddScoped<CreateOrderCommandHandler>();
 
 var app = builder.Build();

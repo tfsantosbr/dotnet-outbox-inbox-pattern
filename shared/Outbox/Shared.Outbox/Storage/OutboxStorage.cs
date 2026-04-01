@@ -19,10 +19,10 @@ public class OutboxStorage(OutboxSettings settings) : IOutboxStorage
 
         _transaction = await _connection.BeginTransactionAsync(cancellationToken);
 
-        const string sql = """
-            SELECT * 
-            FROM "OutboxMessages"
-            WHERE "ProcessedOn" IS NULL 
+        var sql = $"""
+            SELECT *
+            FROM "{settings.Schema}"."{settings.TableName}"
+            WHERE "ProcessedOn" IS NULL
             ORDER BY "OccurredOn"
             LIMIT @MessagesBatchSize
             FOR UPDATE;
@@ -39,8 +39,8 @@ public class OutboxStorage(OutboxSettings settings) : IOutboxStorage
 
     public async Task UpdateMessageAsync(OutboxMessage message, CancellationToken cancellationToken)
     {
-        const string sql = """
-            UPDATE "OutboxMessages"
+        var sql = $"""
+            UPDATE "{settings.Schema}"."{settings.TableName}"
             SET "ProcessedOn" = @ProcessedOn,
                 "Error" = @Error,
                 "ErrorHandledOn" = @ErrorHandledOn

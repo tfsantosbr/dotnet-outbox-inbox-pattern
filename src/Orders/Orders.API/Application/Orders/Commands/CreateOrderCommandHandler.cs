@@ -1,13 +1,13 @@
 using Orders.API.Infrastructure;
 
 using Shared.Contracts.Events;
-using Shared.Messaging.Abstractions;
-
-using System.Text.Json;
+using Shared.Outbox.Abstractions;
 
 namespace Orders.API.Application.Orders.Commands;
 
-public class CreateOrderCommandHandler(OrdersDbContext dbContext, IMessageBus messageBus)
+public class CreateOrderCommandHandler(
+    OrdersDbContext dbContext, 
+    [FromKeyedServices("orders")] IOutboxPublisher outboxPublisher)
 {
     public async Task<Guid> HandleAsync(CreateOrderCommand command, string correlationId)
     {
@@ -18,7 +18,6 @@ public class CreateOrderCommandHandler(OrdersDbContext dbContext, IMessageBus me
             command.TotalAmount);
 
         dbContext.Orders.Add(order);
-        await dbContext.SaveChangesAsync();
 
         var @event = new OrderCreatedIntegrationEvent(
             orderId: order.Id,
@@ -31,7 +30,9 @@ public class CreateOrderCommandHandler(OrdersDbContext dbContext, IMessageBus me
             );
 
         var headers = new Dictionary<string, string> { { "X-Correlation-Id", correlationId } };
-        await messageBus.Publish(JsonSerializer.Serialize(@event), "order-created", headers);
+        await outboxPublisher.Publish(@event, "order-created", headers);
+
+        await dbContext.SaveChangesAsync();
 
         return order.Id;
     }

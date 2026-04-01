@@ -4,13 +4,13 @@ using Shared.Outbox.Abstractions;
 
 namespace Shared.Outbox.Database;
 
-public class OutboxMessageEntityConfig : IEntityTypeConfiguration<OutboxMessage>
+public class OutboxMessageEntityConfig(string tableName = "OutboxMessages") : IEntityTypeConfiguration<OutboxMessage>
 {
     public void Configure(EntityTypeBuilder<OutboxMessage> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.ToTable("OutboxMessages").HasKey(p => p.Id);
+        builder.ToTable(tableName).HasKey(p => p.Id);
 
         builder.Property(o => o.Id).ValueGeneratedNever();
         builder.Property(o => o.Type).HasMaxLength(500);
