@@ -1,6 +1,8 @@
 using Inventory.Consumer.Consumers;
 using Inventory.Consumer.Infrastructure;
+
 using Microsoft.EntityFrameworkCore;
+
 using Shared.Contracts.Events;
 using Shared.Messaging.Abstractions.Extensions;
 using Shared.Messaging.RabbitMQ.Extensions;

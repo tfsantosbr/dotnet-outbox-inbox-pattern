@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 using Shared.Outbox.Abstractions;
 
 namespace Shared.Outbox.Database;

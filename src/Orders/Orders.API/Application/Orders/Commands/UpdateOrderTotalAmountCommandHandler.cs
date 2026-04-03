@@ -1,14 +1,13 @@
 using Orders.API.Infrastructure;
-
 using Shared.Contracts.Events;
-using Shared.Messaging.Abstractions;
+using Shared.Outbox.Abstractions;
 using static Shared.Messaging.Abstractions.MessageHeaders;
 
 namespace Orders.API.Application.Orders.Commands;
 
 public class UpdateOrderTotalAmountCommandHandler(
     OrdersDbContext dbContext,
-    IMessageBus messageBus)
+    [FromKeyedServices("orders")] IOutboxPublisher outboxPublisher)
 {
     public async Task<bool> HandleAsync(UpdateOrderTotalAmountCommand command, string correlationId)
     {
@@ -32,8 +31,8 @@ public class UpdateOrderTotalAmountCommandHandler(
             { CausationId, order.Id.ToString() },
             { Source, "orders-api" }
         };
-        
-        await messageBus.PublishAsync(@event, headers);
+
+        await outboxPublisher.Publish(@event, "order-total-amount-updated", headers);
 
         await dbContext.SaveChangesAsync();
 

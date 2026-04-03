@@ -1,5 +1,6 @@
-using Shared.Outbox.Abstractions;
 using System.Text.Json;
+
+using Shared.Outbox.Abstractions;
 
 namespace Shared.Outbox.Tests.Abstractions;
 

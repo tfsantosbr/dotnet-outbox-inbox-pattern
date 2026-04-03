@@ -1,11 +1,15 @@
 using System.Text;
 using System.Text.Json;
+
 using Microsoft.Extensions.Logging;
+
 using RabbitMQ.Client;
+
 using Shared.Events;
 using Shared.Messaging.Abstractions;
 using Shared.Messaging.RabbitMQ.Connection;
 using Shared.Messaging.RabbitMQ.Options;
+
 using RmqExchangeType = RabbitMQ.Client.ExchangeType;
 
 namespace Shared.Messaging.RabbitMQ;
@@ -31,7 +35,7 @@ internal sealed class RabbitMqMessageBus(
             ? new Dictionary<string, string>(headers)
             : [];
 
-        mergedHeaders[MessageHeaders.MessageId]     = message.MessageId.ToString();
+        mergedHeaders[MessageHeaders.MessageId] = message.MessageId.ToString();
         mergedHeaders[MessageHeaders.OccurredOnUtc] = message.OccurredOnUtc.ToString("O");
 
         await PublishCoreAsync(json, options, mergedHeaders, cancellationToken);
@@ -76,13 +80,13 @@ internal sealed class RabbitMqMessageBus(
 
         var exchangeType = rmqOptions?.ExchangeType switch
         {
-            RabbitMqExchangeType.Direct  => RmqExchangeType.Direct,
-            RabbitMqExchangeType.Topic   => RmqExchangeType.Topic,
+            RabbitMqExchangeType.Direct => RmqExchangeType.Direct,
+            RabbitMqExchangeType.Topic => RmqExchangeType.Topic,
             RabbitMqExchangeType.Headers => RmqExchangeType.Headers,
-            _                            => RmqExchangeType.Fanout
+            _ => RmqExchangeType.Fanout
         };
 
-        var durable    = rmqOptions?.Durable ?? false;
+        var durable = rmqOptions?.Durable ?? false;
         var routingKey = rmqOptions?.RoutingKey ?? string.Empty;
 
         await _channelLock.WaitAsync(cancellationToken);
@@ -125,7 +129,7 @@ internal sealed class RabbitMqMessageBus(
         _channel = await connection.CreateChannelAsync(
             new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true),
             cancellationToken);
-            
+
         logger.LogDebug("RabbitMQ publisher channel created");
 
         return _channel;

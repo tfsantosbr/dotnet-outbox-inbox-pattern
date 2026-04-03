@@ -1,16 +1,13 @@
 using Orders.API.Infrastructure;
-
 using Shared.Contracts.Events;
-using Shared.Messaging.Abstractions;
-using static Shared.Messaging.Abstractions.MessageHeaders;
 using Shared.Outbox.Abstractions;
+using static Shared.Messaging.Abstractions.MessageHeaders;
 
 namespace Orders.API.Application.Orders.Commands;
 
 public class CreateOrderCommandHandler(
     OrdersDbContext dbContext,
-    IMessageBus messageBus)
-    //[FromKeyedServices("orders")] IOutboxPublisher outboxPublisher)
+    [FromKeyedServices("orders")] IOutboxPublisher outboxPublisher)
 {
     public async Task<Guid> HandleAsync(CreateOrderCommand command, string correlationId)
     {
@@ -34,9 +31,7 @@ public class CreateOrderCommandHandler(
             { Source, "orders-api" }
         };
 
-        await messageBus.PublishAsync(@event, headers);
-
-        // await outboxPublisher.Publish(@event, "order-created", headers);
+        await outboxPublisher.Publish(@event, "order-created", headers);
 
         await dbContext.SaveChangesAsync();
 

@@ -9,9 +9,9 @@ public class OrderCustomerUpdatedConsumer(ILogger<OrderCustomerUpdatedConsumer> 
     public async Task ConsumeAsync(OrderCustomerUpdatedIntegrationEvent message, IMessageContext context, CancellationToken cancellationToken = default)
     {
         context.Headers.TryGetValue(MessageHeaders.OccurredOnUtc, out var occurredOnUtc);
-        context.Headers.TryGetValue(MessageHeaders.CorrelationId,  out var correlationId);
-        context.Headers.TryGetValue(MessageHeaders.CausationId,    out var causationId);
-        context.Headers.TryGetValue(MessageHeaders.Source,         out var source);
+        context.Headers.TryGetValue(MessageHeaders.CorrelationId, out var correlationId);
+        context.Headers.TryGetValue(MessageHeaders.CausationId, out var causationId);
+        context.Headers.TryGetValue(MessageHeaders.Source, out var source);
 
         logger.LogInformation(
             "[Inventory] Order customer updated: {OrderId} | {PreviousCustomerId} → {NewCustomerId} | OccurredOnUtc: {OccurredOnUtc} CorrelationId: {CorrelationId} CausationId: {CausationId} Source: {Source}",

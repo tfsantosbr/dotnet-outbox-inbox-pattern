@@ -1,5 +1,6 @@
 using Shared.Messaging.RabbitMQ.Connection;
 using Shared.Messaging.RabbitMQ.Options;
+
 using MsOptions = Microsoft.Extensions.Options.Options;
 
 namespace Shared.Messaging.RabbitMQ.Tests.Connection;

@@ -1,4 +1,5 @@
 using Orders.API.Application.Orders.Commands;
+
 using Shared.Messaging.Abstractions;
 
 namespace Orders.API.Endpoints;

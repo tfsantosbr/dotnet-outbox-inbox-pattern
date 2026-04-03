@@ -9,16 +9,17 @@ using Shared.Messaging.RabbitMQ.Options;
 using Shared.Outbox.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+var configuration = builder.Configuration;
 
 builder.Services.AddDbContext<OrdersDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
+    options.UseNpgsql(configuration.GetConnectionString("Database")));
 
 // Messaging
 
 builder.Services
     .AddMessaging()
     .UseRabbitMq(options =>
-        options.ConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")!)
+        options.ConnectionString = configuration.GetConnectionString("RabbitMQ")!)
     .AddPublishOptions<OrderCreatedIntegrationEvent>(o =>
     {
         o.Destination = "order-created";
@@ -37,13 +38,13 @@ builder.Services
 
 // Outbox
 
-// builder.Services.AddOutboxServices<OrdersDbContext>(
-//     moduleName: "orders",
-//     connectionString: builder.Configuration.GetConnectionString("Database")!,
-//     intervalInSeconds: 10,
-//     messagesBatchSize: 30,
-//     tableName: "outbox_messages"
-// );
+builder.Services.AddOutboxServices<OrdersDbContext>(
+    moduleName: "orders",
+    connectionString: configuration.GetConnectionString("Database")!,
+    intervalInSeconds: 10,
+    messagesBatchSize: 30,
+    tableName: "outbox_messages"
+);
 
 builder.Services.AddScoped<CreateOrderCommandHandler>();
 builder.Services.AddScoped<UpdateOrderCustomerCommandHandler>();

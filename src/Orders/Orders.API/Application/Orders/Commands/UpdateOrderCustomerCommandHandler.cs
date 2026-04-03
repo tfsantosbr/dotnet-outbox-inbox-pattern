@@ -1,7 +1,4 @@
-using Microsoft.EntityFrameworkCore;
-
 using Orders.API.Infrastructure;
-
 using Shared.Contracts.Events;
 using Shared.Messaging.Abstractions;
 using static Shared.Messaging.Abstractions.MessageHeaders;

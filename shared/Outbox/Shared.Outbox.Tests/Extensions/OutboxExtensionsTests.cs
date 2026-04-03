@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+
 using NSubstitute;
+
 using Shared.Messaging.Abstractions;
 using Shared.Outbox.Abstractions;
 using Shared.Outbox.Database;

@@ -1,4 +1,3 @@
-using Polly;
 using Shared.Outbox.Resilience;
 
 namespace Shared.Outbox.Tests.Resilience;

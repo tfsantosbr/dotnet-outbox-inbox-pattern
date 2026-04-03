@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+
 using Shared.Messaging.Abstractions;
 using Shared.Messaging.Abstractions.Extensions;
 using Shared.Messaging.RabbitMQ.Connection;

@@ -1,5 +1,7 @@
 using Dapper;
+
 using Npgsql;
+
 using Shared.Outbox.Abstractions;
 using Shared.Outbox.Settings;
 

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 using Orders.API.Application.Orders;
 
 namespace Orders.API.Infrastructure.Mappings;

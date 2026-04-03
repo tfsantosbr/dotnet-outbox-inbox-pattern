@@ -57,22 +57,19 @@ Open three separate terminals and run each service:
 ### Terminal 1 — Orders API
 
 ```bash
-cd src/Orders/Orders.API
-dotnet run
+dotnet run --project src/Orders/Orders.API
 ```
 
 ### Terminal 2 — Inventory Consumer
 
 ```bash
-cd src/Inventory/Inventory.Consumer
-dotnet run
+dotnet run --project src/Inventory/Inventory.Consumer
 ```
 
 ### Terminal 3 — Notification Consumer
 
 ```bash
-cd src/Notification/Notification.Consumer
-dotnet run
+dotnet run --project src/Notification/Notification.Consumer
 ```
 
 The Orders API will be available at `http://localhost:5000` (or the port shown in the terminal output after startup).

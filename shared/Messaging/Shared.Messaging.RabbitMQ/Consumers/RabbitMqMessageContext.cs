@@ -1,6 +1,8 @@
-using RabbitMQ.Client;
-using Shared.Messaging.Abstractions;
 using System.Text;
+
+using RabbitMQ.Client;
+
+using Shared.Messaging.Abstractions;
 
 namespace Shared.Messaging.RabbitMQ.Consumers;
 

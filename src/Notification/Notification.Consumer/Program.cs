@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+
 using Notification.Consumer.Consumers;
 using Notification.Consumer.Infrastructure;
+
 using Shared.Contracts.Events;
 using Shared.Messaging.Abstractions.Extensions;
 using Shared.Messaging.RabbitMQ.Extensions;

@@ -1,13 +1,17 @@
+using System.Text.Json;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+
 using Shared.Messaging.Abstractions;
 using Shared.Messaging.RabbitMQ.Connection;
 using Shared.Messaging.RabbitMQ.Options;
+
 using RmqExchangeType = RabbitMQ.Client.ExchangeType;
-using System.Text.Json;
 
 namespace Shared.Messaging.RabbitMQ.Consumers;
 
@@ -26,10 +30,10 @@ internal sealed class RabbitMqConsumerWorker<TMessage, TConsumer>(
 
         var exchangeType = options.ExchangeType switch
         {
-            RabbitMqExchangeType.Direct  => RmqExchangeType.Direct,
-            RabbitMqExchangeType.Topic   => RmqExchangeType.Topic,
+            RabbitMqExchangeType.Direct => RmqExchangeType.Direct,
+            RabbitMqExchangeType.Topic => RmqExchangeType.Topic,
             RabbitMqExchangeType.Headers => RmqExchangeType.Headers,
-            _                            => RmqExchangeType.Fanout
+            _ => RmqExchangeType.Fanout
         };
 
         await channel.ExchangeDeclareAsync(

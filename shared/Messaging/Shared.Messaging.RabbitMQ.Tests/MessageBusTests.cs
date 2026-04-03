@@ -1,9 +1,13 @@
 using Microsoft.Extensions.Logging;
+
 using NSubstitute;
+
 using RabbitMQ.Client;
+
 using Shared.Events;
 using Shared.Messaging.Abstractions;
 using Shared.Messaging.RabbitMQ.Connection;
+
 using static Shared.Messaging.Abstractions.MessageHeaders;
 
 namespace Shared.Messaging.RabbitMQ.Tests;
