@@ -54,10 +54,12 @@ public class OutboxProcessorBackgroundService(
             await resiliencePipeline.ExecuteAsync(
                 async cancelationToken =>
                 {
+                    var mergedHeaders = SetRequiredHeader(message, headers);
+
                     await messageBus.PublishAsync(
                         message.Content,
                         message.Destination,
-                        headers,
+                        mergedHeaders,
                         cancelationToken
                     );
 
@@ -85,5 +87,18 @@ public class OutboxProcessorBackgroundService(
                 moduleName
             );
         }
+    }
+
+    private static Dictionary<string, string> SetRequiredHeader(
+        OutboxMessage message, Dictionary<string, string>? headers)
+    {
+        var mergedHeaders = headers is not null
+                            ? new Dictionary<string, string>(headers)
+                            : [];
+
+        mergedHeaders[MessageHeaders.MessageId] = message.Id.ToString();
+        mergedHeaders[MessageHeaders.OccurredOnUtc] = message.OccurredOn.ToString("O");
+
+        return mergedHeaders;
     }
 }
