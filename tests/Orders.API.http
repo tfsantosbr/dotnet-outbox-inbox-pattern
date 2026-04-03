@@ -1,11 +1,31 @@
 @baseUrl = http://localhost:5176
+@orderId = {{createOrder.response.body.$.id}}
 
 ### Create Order
+# @name createOrder
 POST {{baseUrl}}/orders
 Content-Type: application/json
-X-Correlation-ID: {{$guid}}
+X-Correlation-Id: {{$guid}}
 
 {
   "customerId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "totalAmount": 150.00
+}
+
+### Update Order Customer
+PUT {{baseUrl}}/orders/{{orderId}}/customer
+Content-Type: application/json
+X-Correlation-Id: {{$guid}}
+
+{
+  "customerId":"{{$guid}}"
+}
+
+### Update Order Total Amount
+PUT {{baseUrl}}/orders/{{orderId}}/total-amount
+Content-Type: application/json
+X-Correlation-Id: {{$guid}}
+
+{
+  "totalAmount": {{$randomInt 50 9999}}
 }

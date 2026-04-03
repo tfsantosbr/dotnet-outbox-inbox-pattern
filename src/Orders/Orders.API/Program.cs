@@ -23,6 +23,16 @@ builder.Services
     {
         o.Destination = "order-created";
         o.ExchangeType = RabbitMqExchangeType.Fanout;
+    })
+    .AddPublishOptions<OrderCustomerUpdatedIntegrationEvent>(o =>
+    {
+        o.Destination = "order-customer-updated";
+        o.ExchangeType = RabbitMqExchangeType.Fanout;
+    })
+    .AddPublishOptions<OrderTotalAmountUpdatedIntegrationEvent>(o =>
+    {
+        o.Destination = "order-total-amount-updated";
+        o.ExchangeType = RabbitMqExchangeType.Fanout;
     });
 
 // Outbox
@@ -36,6 +46,8 @@ builder.Services
 // );
 
 builder.Services.AddScoped<CreateOrderCommandHandler>();
+builder.Services.AddScoped<UpdateOrderCustomerCommandHandler>();
+builder.Services.AddScoped<UpdateOrderTotalAmountCommandHandler>();
 
 var app = builder.Build();
 

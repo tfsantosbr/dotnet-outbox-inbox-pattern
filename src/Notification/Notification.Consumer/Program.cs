@@ -17,6 +17,16 @@ builder.Services.AddMessaging()
     {
         config.Exchange = "order-created";
         config.Queue = "notification.order-created";
+    })
+    .AddConsumer<OrderCustomerUpdatedConsumer, OrderCustomerUpdatedIntegrationEvent>(config =>
+    {
+        config.Exchange = "order-customer-updated";
+        config.Queue = "notification.order-customer-updated";
+    })
+    .AddConsumer<OrderTotalAmountUpdatedConsumer, OrderTotalAmountUpdatedIntegrationEvent>(config =>
+    {
+        config.Exchange = "order-total-amount-updated";
+        config.Queue = "notification.order-total-amount-updated";
     });
 
 var host = builder.Build();

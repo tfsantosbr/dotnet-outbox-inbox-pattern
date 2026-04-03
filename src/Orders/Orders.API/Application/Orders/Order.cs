@@ -6,4 +6,8 @@ public class Order(Guid id, Guid customerId, DateTime createdOnUtc, decimal tota
     public Guid CustomerId { get; private set; } = customerId;
     public DateTime CreatedOnUtc { get; private set; } = createdOnUtc;
     public decimal TotalAmount { get; private set; } = totalAmount;
+
+    public void UpdateCustomer(Guid customerId) => CustomerId = customerId;
+
+    public void UpdateTotalAmount(decimal totalAmount) => TotalAmount = totalAmount;
 }
