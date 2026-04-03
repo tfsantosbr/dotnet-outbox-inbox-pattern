@@ -190,13 +190,13 @@ public interface IOutboxPublisher
         TEvent integrationEvent,
         string destination,
         IDictionary<string, string>? headers = null
-    ) where TEvent : IIntegrationEvent;
+    ) where TEvent : IEventBase;
 }
 ```
 
 | Parameter | Description |
 | --- | --- |
-| `integrationEvent` | The event to publish. Must implement `IIntegrationEvent`. |
+| `integrationEvent` | The event to publish. Must implement `IEventBase`. |
 | `destination` | Queue or exchange name on RabbitMQ. |
 | `headers` | Optional metadata (correlation IDs, tracing, etc.). Stored as `jsonb` and forwarded to the broker. |
 

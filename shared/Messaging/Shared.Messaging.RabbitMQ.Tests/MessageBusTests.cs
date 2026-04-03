@@ -43,7 +43,7 @@ public class RabbitMqMessageBusTests
         await _channel.Received(1).ExchangeDeclareAsync(
             exchange: destination,
             type: ExchangeType.Fanout,
-            durable: true,
+            durable: Arg.Is<bool>(v => !v),
             autoDelete: Arg.Any<bool>(),
             arguments: Arg.Any<IDictionary<string, object?>>(),
             noWait: Arg.Any<bool>(),
@@ -95,7 +95,7 @@ public class RabbitMqMessageBusTests
     {
         // Arrange
         var destination = "test-exchange";
-        var headers = new Dictionary<string, string> { { "X-Correlation-Id", "abc123" } };
+        var headers = new Dictionary<string, string> { { "correlation-id", "abc123" } };
 
         // Act
         await _messageBus.PublishAsync("message", destination, headers);
@@ -106,7 +106,7 @@ public class RabbitMqMessageBusTests
             routingKey: string.Empty,
             mandatory: false,
             basicProperties: Arg.Is<BasicProperties>(p =>
-                p.Headers != null && p.Headers.ContainsKey("X-Correlation-Id")),
+                p.Headers != null && p.Headers.ContainsKey("correlation-id")),
             body: Arg.Any<ReadOnlyMemory<byte>>(),
             cancellationToken: Arg.Any<CancellationToken>());
     }

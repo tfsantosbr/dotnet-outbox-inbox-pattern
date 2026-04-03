@@ -4,15 +4,7 @@ namespace Shared.Contracts.Events;
 
 public record OrderCustomerUpdatedIntegrationEvent : IntegrationEvent
 {
-    public OrderCustomerUpdatedIntegrationEvent(
-        Guid orderId,
-        Guid previousCustomerId,
-        Guid newCustomerId,
-        DateTime occurredOnUtc,
-        string correlationId,
-        string? causationId,
-        string source)
-        : base(occurredOnUtc, correlationId, causationId, source)
+    public OrderCustomerUpdatedIntegrationEvent(Guid orderId, Guid previousCustomerId, Guid newCustomerId)
     {
         OrderId = orderId;
         PreviousCustomerId = previousCustomerId;

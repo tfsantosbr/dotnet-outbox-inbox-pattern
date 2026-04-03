@@ -4,15 +4,7 @@ namespace Shared.Contracts.Events;
 
 public record OrderTotalAmountUpdatedIntegrationEvent : IntegrationEvent
 {
-    public OrderTotalAmountUpdatedIntegrationEvent(
-        Guid orderId,
-        decimal previousTotalAmount,
-        decimal newTotalAmount,
-        DateTime occurredOnUtc,
-        string correlationId,
-        string? causationId,
-        string source)
-        : base(occurredOnUtc, correlationId, causationId, source)
+    public OrderTotalAmountUpdatedIntegrationEvent(Guid orderId, decimal previousTotalAmount, decimal newTotalAmount)
     {
         OrderId = orderId;
         PreviousTotalAmount = previousTotalAmount;

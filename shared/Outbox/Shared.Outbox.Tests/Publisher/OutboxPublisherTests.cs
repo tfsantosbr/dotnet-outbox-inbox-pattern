@@ -9,10 +9,7 @@ namespace Shared.Outbox.Tests.Publisher;
 
 public class OutboxPublisherTests
 {
-    private record TestIntegrationEvent : IntegrationEvent
-    {
-        public TestIntegrationEvent() : base(default, string.Empty, null, string.Empty) { }
-    }
+    private record TestIntegrationEvent : IntegrationEvent { }
 
     private sealed class TestOutboxDbContext(DbContextOptions<TestOutboxDbContext> options) : DbContext(options), IOutboxDbContext
     {
@@ -49,7 +46,7 @@ public class OutboxPublisherTests
         // Arrange
         await using var context = CreateInMemoryContext();
         var publisher = new OutboxPublisher<TestOutboxDbContext>(context);
-        var integrationEvent = new TestIntegrationEvent { Id = Guid.NewGuid(), OccurredOnUtc = DateTime.UtcNow };
+        var integrationEvent = new TestIntegrationEvent { MessageId = Guid.NewGuid(), OccurredOnUtc = DateTime.UtcNow };
 
         // Act
         await publisher.Publish(integrationEvent, "test-destination");
@@ -58,7 +55,7 @@ public class OutboxPublisherTests
         // Assert
         var messages = context.OutboxMessages.ToList();
         Assert.Single(messages);
-        Assert.Equal(integrationEvent.Id, messages[0].Id);
+        Assert.Equal(integrationEvent.MessageId, messages[0].Id);
         Assert.Equal("test-destination", messages[0].Destination);
     }
 
@@ -68,7 +65,7 @@ public class OutboxPublisherTests
         // Arrange
         await using var context = CreateInMemoryContext();
         var publisher = new OutboxPublisher<TestOutboxDbContext>(context);
-        var integrationEvent = new TestIntegrationEvent { Id = Guid.NewGuid(), OccurredOnUtc = DateTime.UtcNow };
+        var integrationEvent = new TestIntegrationEvent { MessageId = Guid.NewGuid(), OccurredOnUtc = DateTime.UtcNow };
         var headers = new Dictionary<string, string>
         {
             { "correlation-id", "abc-123" },
@@ -94,7 +91,7 @@ public class OutboxPublisherTests
         // Arrange
         await using var context = CreateInMemoryContext();
         var publisher = new OutboxPublisher<TestOutboxDbContext>(context);
-        var integrationEvent = new TestIntegrationEvent { Id = Guid.NewGuid(), OccurredOnUtc = DateTime.UtcNow };
+        var integrationEvent = new TestIntegrationEvent { MessageId = Guid.NewGuid(), OccurredOnUtc = DateTime.UtcNow };
 
         // Act
         await publisher.Publish(integrationEvent, "test-destination", null);

@@ -9,5 +9,5 @@ public interface IOutboxPublisher
         string destination,
         IDictionary<string, string>? headers = null
     )
-        where TEvent : IIntegrationEvent;
+        where TEvent : IEventBase;
 }

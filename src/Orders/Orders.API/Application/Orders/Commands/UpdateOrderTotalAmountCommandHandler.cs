@@ -23,13 +23,16 @@ public class UpdateOrderTotalAmountCommandHandler(
         var @event = new OrderTotalAmountUpdatedIntegrationEvent(
             orderId: order.Id,
             previousTotalAmount: previousTotalAmount,
-            newTotalAmount: order.TotalAmount,
-            occurredOnUtc: DateTime.UtcNow,
-            correlationId: correlationId,
-            causationId: order.Id.ToString(),
-            source: "Orders.API");
+            newTotalAmount: order.TotalAmount);
 
-        var headers = new Dictionary<string, string> { { "X-Correlation-Id", correlationId } };
+        var occurredOnUtc = DateTime.UtcNow;
+        var headers = new Dictionary<string, string>
+        {
+            { "occurred-on-utc", occurredOnUtc.ToString("O") },
+            { "correlation-id", correlationId },
+            { "causation-id", order.Id.ToString() },
+            { "source", "Orders.API" }
+        };
         await messageBus.PublishAsync(@event, headers);
 
         await dbContext.SaveChangesAsync();

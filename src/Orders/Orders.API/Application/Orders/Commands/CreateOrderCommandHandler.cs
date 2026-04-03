@@ -24,13 +24,15 @@ public class CreateOrderCommandHandler(
         var @event = new OrderCreatedIntegrationEvent(
             orderId: order.Id,
             customerId: order.CustomerId,
-            totalAmount: order.TotalAmount,
-            occurredOnUtc: order.CreatedOnUtc,
-            correlationId: correlationId,
-            causationId: order.Id.ToString(),
-            source: "Orders.API");
+            totalAmount: order.TotalAmount);
 
-        var headers = new Dictionary<string, string> { { "X-Correlation-Id", correlationId } };
+        var headers = new Dictionary<string, string>
+        {
+            { "occurred-on-utc", order.CreatedOnUtc.ToString("O") },
+            { "correlation-id", correlationId },
+            { "causation-id", order.Id.ToString() },
+            { "source", "Orders.API" }
+        };
         await messageBus.PublishAsync(@event, headers);
 
         // await outboxPublisher.Publish(@event, "order-created", headers);

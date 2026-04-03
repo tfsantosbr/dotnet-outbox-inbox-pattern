@@ -2,6 +2,6 @@ namespace Shared.Events;
 
 public interface IEventBase
 {
-    Guid Id { get; }
+    Guid MessageId { get; }
     DateTime OccurredOnUtc { get; }
 }

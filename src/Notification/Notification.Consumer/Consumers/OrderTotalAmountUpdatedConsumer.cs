@@ -8,10 +8,16 @@ public class OrderTotalAmountUpdatedConsumer(ILogger<OrderTotalAmountUpdatedCons
 {
     public async Task ConsumeAsync(OrderTotalAmountUpdatedIntegrationEvent message, IMessageContext context, CancellationToken cancellationToken = default)
     {
-        context.Headers.TryGetValue("X-Correlation-Id", out var correlationId);
+        context.Headers.TryGetValue("occurred-on-utc", out var occurredOnUtc);
+        context.Headers.TryGetValue("correlation-id", out var correlationId);
+        context.Headers.TryGetValue("causation-id", out var causationId);
+        context.Headers.TryGetValue("source", out var source);
+
         logger.LogInformation(
-            "[Notification] Order total amount updated: {OrderId} | {PreviousTotalAmount} → {NewTotalAmount} CorrelationId: {CorrelationId}",
-            message.OrderId, message.PreviousTotalAmount, message.NewTotalAmount, correlationId ?? "unknown");
+            "[Notification] Order total amount updated: {OrderId} | {PreviousTotalAmount} → {NewTotalAmount} | OccurredOnUtc: {OccurredOnUtc} CorrelationId: {CorrelationId} CausationId: {CausationId} Source: {Source}",
+            message.OrderId, message.PreviousTotalAmount, message.NewTotalAmount,
+            occurredOnUtc ?? "unknown", correlationId ?? "unknown", causationId ?? "unknown", source ?? "unknown");
+
         await context.AckAsync(cancellationToken: cancellationToken);
     }
 }

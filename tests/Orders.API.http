@@ -5,7 +5,7 @@
 # @name createOrder
 POST {{baseUrl}}/orders
 Content-Type: application/json
-X-Correlation-Id: {{$guid}}
+correlation-id: {{$guid}}
 
 {
   "customerId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -15,7 +15,7 @@ X-Correlation-Id: {{$guid}}
 ### Update Order Customer
 PUT {{baseUrl}}/orders/{{orderId}}/customer
 Content-Type: application/json
-X-Correlation-Id: {{$guid}}
+correlation-id: {{$guid}}
 
 {
   "customerId":"{{$guid}}"
@@ -24,7 +24,7 @@ X-Correlation-Id: {{$guid}}
 ### Update Order Total Amount
 PUT {{baseUrl}}/orders/{{orderId}}/total-amount
 Content-Type: application/json
-X-Correlation-Id: {{$guid}}
+correlation-id: {{$guid}}
 
 {
   "totalAmount": {{$randomInt 50 9999}}

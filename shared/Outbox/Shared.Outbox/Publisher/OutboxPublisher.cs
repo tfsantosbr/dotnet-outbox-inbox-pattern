@@ -12,11 +12,11 @@ public class OutboxPublisher<TContext>(TContext context) : IOutboxPublisher
         string destination,
         IDictionary<string, string>? headers = null
     )
-        where TEvent : IIntegrationEvent
+        where TEvent : IEventBase
     {
         var outboxMessage = OutboxMessage.Create(
             destination,
-            integrationEvent.Id,
+            integrationEvent.MessageId,
             integrationEvent,
             integrationEvent.OccurredOnUtc,
             headers

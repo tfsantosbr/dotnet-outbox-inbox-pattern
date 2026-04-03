@@ -25,13 +25,16 @@ public class UpdateOrderCustomerCommandHandler(
         var @event = new OrderCustomerUpdatedIntegrationEvent(
             orderId: order.Id,
             previousCustomerId: previousCustomerId,
-            newCustomerId: order.CustomerId,
-            occurredOnUtc: DateTime.UtcNow,
-            correlationId: correlationId,
-            causationId: order.Id.ToString(),
-            source: "Orders.API");
+            newCustomerId: order.CustomerId);
 
-        var headers = new Dictionary<string, string> { { "X-Correlation-Id", correlationId } };
+        var occurredOnUtc = DateTime.UtcNow;
+        var headers = new Dictionary<string, string>
+        {
+            { "occurred-on-utc", occurredOnUtc.ToString("O") },
+            { "correlation-id", correlationId },
+            { "causation-id", order.Id.ToString() },
+            { "source", "Orders.API" }
+        };
         await messageBus.PublishAsync(@event, headers);
 
         await dbContext.SaveChangesAsync();
