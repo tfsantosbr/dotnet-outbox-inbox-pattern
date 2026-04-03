@@ -7,9 +7,13 @@ namespace Shared.Messaging.RabbitMQ.Consumers;
 internal sealed class RabbitMqMessageContext(
     IChannel channel,
     ulong deliveryTag,
-    IDictionary<string, object?>? rawHeaders) : IMessageContext
+    IDictionary<string, object?>? rawHeaders,
+    string? messageId,
+    bool redelivered) : IMessageContext
 {
     public IReadOnlyDictionary<string, string> Headers { get; } = DecodeHeaders(rawHeaders);
+    public string? MessageId { get; } = messageId;
+    public bool Redelivered { get; } = redelivered;
 
     public async Task AckAsync(bool multiple = false, CancellationToken cancellationToken = default)
         => await channel.BasicAckAsync(deliveryTag, multiple: multiple, cancellationToken);

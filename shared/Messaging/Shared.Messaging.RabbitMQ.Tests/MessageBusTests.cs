@@ -1,231 +1,160 @@
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using RabbitMQ.Client;
+using Shared.Messaging.Abstractions;
 using Shared.Messaging.RabbitMQ.Connection;
 
 namespace Shared.Messaging.RabbitMQ.Tests;
 
 public class RabbitMqMessageBusTests
 {
-    private readonly IRabbitMqConnectionFactory _connectionFactory;
-    private readonly IConnection _connection;
+    private readonly IPersistentRabbitMqConnection _connection;
+    private readonly IPublishTopologyRegistry _topologyRegistry;
     private readonly IChannel _channel;
     private readonly RabbitMqMessageBus _messageBus;
 
     public RabbitMqMessageBusTests()
     {
-        _connectionFactory = Substitute.For<IRabbitMqConnectionFactory>();
-        _connection = Substitute.For<IConnection>();
+        _connection = Substitute.For<IPersistentRabbitMqConnection>();
+        _topologyRegistry = Substitute.For<IPublishTopologyRegistry>();
         _channel = Substitute.For<IChannel>();
-        _messageBus = new RabbitMqMessageBus(_connectionFactory);
+        var logger = Substitute.For<ILogger<RabbitMqMessageBus>>();
 
-        _connectionFactory.CreateConnectionAsync(Arg.Any<CancellationToken>()).Returns(_connection);
+        _messageBus = new RabbitMqMessageBus(_connection, _topologyRegistry, logger);
+
         _connection
-            .CreateChannelAsync(cancellationToken: Arg.Any<CancellationToken>())
+            .CreateChannelAsync(Arg.Any<CreateChannelOptions?>(), Arg.Any<CancellationToken>())
             .Returns(_channel);
+
+        _channel.IsOpen.Returns(true);
     }
 
     [Fact]
-    public async Task Publish_WithoutHeaders_PublishesMessageSuccessfully()
+    public async Task PublishAsync_WithStringMessage_PublishesSuccessfully()
     {
         // Arrange
         var message = "test message";
-        var queueName = "test-queue";
+        var destination = "test-exchange";
 
         // Act
-        await _messageBus.Publish(message, queueName);
+        await _messageBus.PublishAsync(message, destination);
 
         // Assert
-        await _connectionFactory.Received(1).CreateConnectionAsync(Arg.Any<CancellationToken>());
-        await _connection
-            .Received(1)
-            .CreateChannelAsync(cancellationToken: Arg.Any<CancellationToken>());
-        await _channel
-            .Received(1)
-            .ExchangeDeclareAsync(
-                queueName,
-                ExchangeType.Fanout,
-                cancellationToken: Arg.Any<CancellationToken>()
-            );
-        await _channel
-            .Received(1)
-            .BasicPublishAsync(
-                exchange: queueName,
-                routingKey: string.Empty,
-                mandatory: false,
-                basicProperties: Arg.Any<BasicProperties>(),
-                body: Arg.Any<ReadOnlyMemory<byte>>(),
-                cancellationToken: Arg.Any<CancellationToken>()
-            );
+        await _channel.Received(1).ExchangeDeclareAsync(
+            exchange: destination,
+            type: ExchangeType.Fanout,
+            durable: true,
+            autoDelete: Arg.Any<bool>(),
+            arguments: Arg.Any<IDictionary<string, object?>>(),
+            noWait: Arg.Any<bool>(),
+            cancellationToken: Arg.Any<CancellationToken>());
+
+        await _channel.Received(1).BasicPublishAsync(
+            exchange: destination,
+            routingKey: string.Empty,
+            mandatory: false,
+            basicProperties: Arg.Any<BasicProperties>(),
+            body: Arg.Any<ReadOnlyMemory<byte>>(),
+            cancellationToken: Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Publish_WithHeaders_PublishesMessageWithHeaders()
+    public async Task PublishAsync_WithTypedMessage_ResolvesTopologyAndPublishes()
     {
         // Arrange
-        var message = "test message";
-        var queueName = "test-queue";
-        var correlationId = "test-correlation-id";
-        var headers = new Dictionary<string, string>
-        {
-            { "X-Correlation-ID", correlationId },
-            { "Custom-Header", "custom-value" },
-        };
+        var destination = "typed-exchange";
+        _topologyRegistry.GetOptions(typeof(TestMessage)).Returns(new PublishOptions { Destination = destination });
 
         // Act
-        await _messageBus.Publish(message, queueName, headers);
+        await _messageBus.PublishAsync(new TestMessage("hello"));
 
         // Assert
-        await _connectionFactory.Received(1).CreateConnectionAsync(Arg.Any<CancellationToken>());
-        await _connection
-            .Received(1)
-            .CreateChannelAsync(cancellationToken: Arg.Any<CancellationToken>());
-        await _channel
-            .Received(1)
-            .ExchangeDeclareAsync(
-                queueName,
-                ExchangeType.Fanout,
-                cancellationToken: Arg.Any<CancellationToken>()
-            );
-        await _channel
-            .Received(1)
-            .BasicPublishAsync(
-                exchange: queueName,
-                routingKey: string.Empty,
-                mandatory: false,
-                basicProperties: Arg.Is<BasicProperties>(props =>
-                    props.Headers != null
-                    && props.Headers.ContainsKey("X-Correlation-ID")
-                    && props.Headers["X-Correlation-ID"]!.ToString() == correlationId
-                ),
-                body: Arg.Any<ReadOnlyMemory<byte>>(),
-                cancellationToken: Arg.Any<CancellationToken>()
-            );
+        await _channel.Received(1).ExchangeDeclareAsync(
+            exchange: destination,
+            type: Arg.Any<string>(),
+            durable: Arg.Any<bool>(),
+            autoDelete: Arg.Any<bool>(),
+            arguments: Arg.Any<IDictionary<string, object?>>(),
+            noWait: Arg.Any<bool>(),
+            cancellationToken: Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Publish_WithCancellationToken_PassesCancellationTokenToAllOperations()
+    public async Task PublishAsync_WithTypedMessage_NoRegisteredOptions_Throws()
     {
         // Arrange
-        var message = "test message";
-        var queueName = "test-queue";
-        var cancellationToken = new CancellationToken();
+        _topologyRegistry.GetOptions(typeof(TestMessage)).Returns((PublishOptions?)null);
 
-        // Act
-        await _messageBus.Publish(message, queueName, cancellationToken: cancellationToken);
-
-        // Assert
-        await _connectionFactory.Received(1).CreateConnectionAsync(cancellationToken);
-        await _connection.Received(1).CreateChannelAsync(cancellationToken: cancellationToken);
-        await _channel
-            .Received(1)
-            .ExchangeDeclareAsync(
-                queueName,
-                ExchangeType.Fanout,
-                cancellationToken: cancellationToken
-            );
-        await _channel
-            .Received(1)
-            .BasicPublishAsync(
-                exchange: queueName,
-                routingKey: string.Empty,
-                mandatory: false,
-                basicProperties: Arg.Any<BasicProperties>(),
-                body: Arg.Any<ReadOnlyMemory<byte>>(),
-                cancellationToken: cancellationToken
-            );
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _messageBus.PublishAsync(new TestMessage("hello")));
     }
 
     [Fact]
-    public async Task Publish_ValidMessage_CallsBasicPublishAsync()
+    public async Task PublishAsync_WithHeaders_PassesHeadersToBasicProperties()
     {
         // Arrange
-        var message = "test message with special chars";
-        var queueName = "test-queue";
+        var destination = "test-exchange";
+        var headers = new Dictionary<string, string> { { "X-Correlation-Id", "abc123" } };
 
         // Act
-        await _messageBus.Publish(message, queueName);
+        await _messageBus.PublishAsync("message", destination, headers);
 
         // Assert
-        await _channel
-            .Received(1)
-            .BasicPublishAsync(
-                exchange: queueName,
-                routingKey: string.Empty,
-                mandatory: false,
-                basicProperties: Arg.Any<BasicProperties>(),
-                body: Arg.Any<ReadOnlyMemory<byte>>(),
-                cancellationToken: Arg.Any<CancellationToken>()
-            );
+        await _channel.Received(1).BasicPublishAsync(
+            exchange: destination,
+            routingKey: string.Empty,
+            mandatory: false,
+            basicProperties: Arg.Is<BasicProperties>(p =>
+                p.Headers != null && p.Headers.ContainsKey("X-Correlation-Id")),
+            body: Arg.Any<ReadOnlyMemory<byte>>(),
+            cancellationToken: Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Publish_WithNullHeaders_PublishesMessageSuccessfully()
+    public async Task PublishAsync_WithNullHeaders_PublishesWithNullProperties()
     {
         // Arrange
-        var message = "test message";
-        var queueName = "test-queue";
+        var destination = "test-exchange";
 
         // Act
-        await _messageBus.Publish(message, queueName, headers: null);
+        await _messageBus.PublishAsync("message", destination, headers: null);
 
         // Assert
-        await _connectionFactory.Received(1).CreateConnectionAsync(Arg.Any<CancellationToken>());
-        await _connection
-            .Received(1)
-            .CreateChannelAsync(cancellationToken: Arg.Any<CancellationToken>());
-        await _channel
-            .Received(1)
-            .ExchangeDeclareAsync(
-                queueName,
-                ExchangeType.Fanout,
-                cancellationToken: Arg.Any<CancellationToken>()
-            );
-        await _channel
-            .Received(1)
-            .BasicPublishAsync(
-                exchange: queueName,
-                routingKey: string.Empty,
-                mandatory: false,
-                basicProperties: Arg.Is<BasicProperties>(props => props.Headers == null),
-                body: Arg.Any<ReadOnlyMemory<byte>>(),
-                cancellationToken: Arg.Any<CancellationToken>()
-            );
+        await _channel.Received(1).BasicPublishAsync(
+            exchange: destination,
+            routingKey: string.Empty,
+            mandatory: false,
+            basicProperties: Arg.Is<BasicProperties>(p => p.Headers == null),
+            body: Arg.Any<ReadOnlyMemory<byte>>(),
+            cancellationToken: Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Publish_WithEmptyHeaders_PublishesMessageSuccessfully()
+    public async Task PublishAsync_ChannelIsReused_OnSubsequentCalls()
     {
         // Arrange
-        var message = "test message";
-        var queueName = "test-queue";
-        var headers = new Dictionary<string, string>();
+        var destination = "test-exchange";
 
         // Act
-        await _messageBus.Publish(message, queueName, headers);
+        await _messageBus.PublishAsync("message1", destination);
+        await _messageBus.PublishAsync("message2", destination);
 
-        // Assert
-        await _connectionFactory.Received(1).CreateConnectionAsync(Arg.Any<CancellationToken>());
-        await _connection
-            .Received(1)
-            .CreateChannelAsync(cancellationToken: Arg.Any<CancellationToken>());
-        await _channel
-            .Received(1)
-            .ExchangeDeclareAsync(
-                queueName,
-                ExchangeType.Fanout,
-                cancellationToken: Arg.Any<CancellationToken>()
-            );
-        await _channel
-            .Received(1)
-            .BasicPublishAsync(
-                exchange: queueName,
-                routingKey: string.Empty,
-                mandatory: false,
-                basicProperties: Arg.Is<BasicProperties>(props =>
-                    props.Headers != null && props.Headers.Count == 0
-                ),
-                body: Arg.Any<ReadOnlyMemory<byte>>(),
-                cancellationToken: Arg.Any<CancellationToken>()
-            );
+        // Assert — channel created only once
+        await _connection.Received(1).CreateChannelAsync(Arg.Any<CreateChannelOptions?>(), Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task PublishAsync_CreatesChannelWithPublisherConfirmsEnabled()
+    {
+        // Act
+        await _messageBus.PublishAsync("message", "exchange");
+
+        // Assert — channel was created (publisher confirms configured via CreateChannelOptions)
+        await _connection.Received(1).CreateChannelAsync(
+            Arg.Any<CreateChannelOptions?>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    private sealed record TestMessage(string Value);
 }

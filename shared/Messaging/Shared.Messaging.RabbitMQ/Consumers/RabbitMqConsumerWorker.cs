@@ -5,6 +5,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Shared.Messaging.Abstractions;
 using Shared.Messaging.RabbitMQ.Connection;
+using Shared.Messaging.RabbitMQ.Options;
 using RmqExchangeType = RabbitMQ.Client.ExchangeType;
 using System.Text.Json;
 
@@ -13,7 +14,7 @@ namespace Shared.Messaging.RabbitMQ.Consumers;
 internal sealed class RabbitMqConsumerWorker<TMessage, TConsumer>(
     IRabbitMqConnectionFactory connectionFactory,
     IServiceScopeFactory scopeFactory,
-    ConsumerOptions options,
+    RabbitMqConsumerOptions options,
     ILogger<RabbitMqConsumerWorker<TMessage, TConsumer>> logger)
     : BackgroundService
     where TConsumer : class, IMessageConsumer<TMessage>
@@ -25,11 +26,10 @@ internal sealed class RabbitMqConsumerWorker<TMessage, TConsumer>(
 
         var exchangeType = options.ExchangeType switch
         {
-            Abstractions.ExchangeType.Fanout => RmqExchangeType.Fanout,
-            Abstractions.ExchangeType.Direct => RmqExchangeType.Direct,
-            Abstractions.ExchangeType.Topic => RmqExchangeType.Topic,
-            Abstractions.ExchangeType.Headers => RmqExchangeType.Headers,
-            _ => RmqExchangeType.Fanout
+            RabbitMqExchangeType.Direct  => RmqExchangeType.Direct,
+            RabbitMqExchangeType.Topic   => RmqExchangeType.Topic,
+            RabbitMqExchangeType.Headers => RmqExchangeType.Headers,
+            _                            => RmqExchangeType.Fanout
         };
 
         await channel.ExchangeDeclareAsync(
@@ -53,16 +53,24 @@ internal sealed class RabbitMqConsumerWorker<TMessage, TConsumer>(
         var asyncConsumer = new AsyncEventingBasicConsumer(channel);
         asyncConsumer.ReceivedAsync += async (_, ea) =>
         {
+            var message = JsonSerializer.Deserialize<TMessage>(ea.Body.Span);
+            if (message is null) return;
+
             try
             {
-                var message = JsonSerializer.Deserialize<TMessage>(ea.Body.Span);
-                if (message is not null)
-                {
-                    using var scope = scopeFactory.CreateScope();
-                    var consumer = scope.ServiceProvider.GetRequiredService<TConsumer>();
-                    var context = new RabbitMqMessageContext(channel, ea.DeliveryTag, ea.BasicProperties.Headers);
-                    await consumer.ConsumeAsync(message, context, stoppingToken);
-                }
+                using var scope = scopeFactory.CreateScope();
+                var consumer = scope.ServiceProvider.GetRequiredService<TConsumer>();
+                var context = new RabbitMqMessageContext(
+                    channel,
+                    ea.DeliveryTag,
+                    ea.BasicProperties.Headers,
+                    ea.BasicProperties.MessageId,
+                    ea.Redelivered);
+
+                await consumer.ConsumeAsync(message, context, stoppingToken);
+
+                if (options.AckMode == AckMode.AutoOnSuccess)
+                    await channel.BasicAckAsync(ea.DeliveryTag, multiple: false, stoppingToken);
             }
             catch (Exception ex)
             {

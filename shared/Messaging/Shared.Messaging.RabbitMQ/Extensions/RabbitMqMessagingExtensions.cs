@@ -14,22 +14,31 @@ public static class RabbitMqMessagingExtensions
         this MessagingBuilder builder,
         Action<RabbitMqOptions> configure)
     {
-        var options = new RabbitMqOptions();
-        configure(options);
-
-        builder.Services.AddSingleton(options);
+        builder.Services.Configure<RabbitMqOptions>(configure);
         builder.Services.AddSingleton<IRabbitMqConnectionFactory, RabbitMqConnectionFactory>();
-        builder.Services.AddScoped<IMessageBus, RabbitMqMessageBus>();
+        builder.Services.AddSingleton<IPersistentRabbitMqConnection, PersistentRabbitMqConnection>();
+        builder.Services.AddSingleton<IPublishTopologyRegistry, PublishTopologyRegistry>();
+        builder.Services.AddSingleton<IMessageBus, RabbitMqMessageBus>();
 
+        return builder;
+    }
+
+    public static MessagingBuilder AddPublishOptions<TMessage>(
+        this MessagingBuilder builder,
+        Action<RabbitMqPublishOptions> configure)
+    {
+        var options = new RabbitMqPublishOptions();
+        configure(options);
+        builder.Services.AddSingleton(new PublishTopologyEntry(typeof(TMessage), options));
         return builder;
     }
 
     public static MessagingBuilder AddConsumer<TConsumer, TMessage>(
         this MessagingBuilder builder,
-        Action<ConsumerOptions> configure)
+        Action<RabbitMqConsumerOptions> configure)
         where TConsumer : class, IMessageConsumer<TMessage>
     {
-        var options = new ConsumerOptions();
+        var options = new RabbitMqConsumerOptions();
         configure(options);
 
         builder.Services.AddScoped<TConsumer>();

@@ -82,7 +82,7 @@ public class OutboxProcessorBackgroundServiceTests
         // Assert
         await messageBus
             .DidNotReceive()
-            .Publish(
+            .PublishAsync(
                 Arg.Any<string>(),
                 Arg.Any<string>(),
                 Arg.Any<IDictionary<string, string>?>(),
@@ -116,7 +116,7 @@ public class OutboxProcessorBackgroundServiceTests
         // Assert
         await messageBus
             .Received(1)
-            .Publish(
+            .PublishAsync(
                 message.Content,
                 message.Destination,
                 Arg.Any<IDictionary<string, string>?>(),
@@ -141,7 +141,7 @@ public class OutboxProcessorBackgroundServiceTests
         var exceptionMessage = "Connection refused";
 
         messageBus
-            .Publish(
+            .PublishAsync(
                 Arg.Any<string>(),
                 Arg.Any<string>(),
                 Arg.Any<IDictionary<string, string>?>(),

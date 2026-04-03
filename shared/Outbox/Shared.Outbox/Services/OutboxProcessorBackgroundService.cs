@@ -52,7 +52,7 @@ public class OutboxProcessorBackgroundService(
             await resiliencePipeline.ExecuteAsync(
                 async cancelationToken =>
                 {
-                    await messageBus.Publish(
+                    await messageBus.PublishAsync(
                         message.Content,
                         message.Destination,
                         headers,
