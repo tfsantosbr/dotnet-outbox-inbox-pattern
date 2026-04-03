@@ -1,3 +1,5 @@
+using Shared.Events;
+
 namespace Shared.Messaging.Abstractions;
 
 public interface IMessageBus
@@ -5,7 +7,8 @@ public interface IMessageBus
     Task PublishAsync<TMessage>(
         TMessage message,
         IDictionary<string, string>? headers = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default)
+        where TMessage : IEventBase;
 
     Task PublishAsync(
         string message,

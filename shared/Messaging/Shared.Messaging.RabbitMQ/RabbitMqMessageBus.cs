@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
+using Shared.Events;
 using Shared.Messaging.Abstractions;
 using Shared.Messaging.RabbitMQ.Connection;
 using Shared.Messaging.RabbitMQ.Options;
@@ -21,14 +22,19 @@ internal sealed class RabbitMqMessageBus(
         TMessage message,
         IDictionary<string, string>? headers = null,
         CancellationToken cancellationToken = default)
+        where TMessage : IEventBase
     {
-        var options = topologyRegistry.GetOptions(typeof(TMessage))
-            ?? throw new InvalidOperationException(
-                $"No PublishOptions registered for '{typeof(TMessage).Name}'. " +
-                $"Call AddPublishOptions<{typeof(TMessage).Name}>() during configuration.");
-
+        var options = GetPublishOptions<TMessage>();
         var json = JsonSerializer.Serialize(message);
-        await PublishCoreAsync(json, options, headers, cancellationToken);
+
+        var mergedHeaders = headers is not null
+            ? new Dictionary<string, string>(headers)
+            : [];
+
+        mergedHeaders[MessageHeaders.MessageId]     = message.MessageId.ToString();
+        mergedHeaders[MessageHeaders.OccurredOnUtc] = message.OccurredOnUtc.ToString("O");
+
+        await PublishCoreAsync(json, options, mergedHeaders, cancellationToken);
     }
 
     public async Task PublishAsync(
@@ -41,12 +47,31 @@ internal sealed class RabbitMqMessageBus(
         await PublishCoreAsync(message, options, headers, cancellationToken);
     }
 
+    private PublishOptions GetPublishOptions<TMessage>() =>
+        topologyRegistry.GetOptions(typeof(TMessage))
+            ?? throw new InvalidOperationException(
+                $"No PublishOptions registered for '{typeof(TMessage).Name}'. " +
+                $"Call AddPublishOptions<{typeof(TMessage).Name}>() during configuration.");
+
+    private static void ValidateRequiredHeaders(IDictionary<string, string>? headers)
+    {
+        string[] required = [MessageHeaders.MessageId, MessageHeaders.OccurredOnUtc, MessageHeaders.CorrelationId];
+        var missing = required
+            .Where(k => headers is null || !headers.TryGetValue(k, out var v) || string.IsNullOrWhiteSpace(v))
+            .ToList();
+
+        if (missing.Count > 0)
+            throw new InvalidOperationException(
+                $"Missing required message headers: {string.Join(", ", missing)}");
+    }
+
     private async Task PublishCoreAsync(
         string json,
         PublishOptions baseOptions,
         IDictionary<string, string>? headers,
         CancellationToken cancellationToken)
     {
+        ValidateRequiredHeaders(headers);
         var rmqOptions = baseOptions as RabbitMqPublishOptions;
 
         var exchangeType = rmqOptions?.ExchangeType switch
@@ -100,6 +125,7 @@ internal sealed class RabbitMqMessageBus(
         _channel = await connection.CreateChannelAsync(
             new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true),
             cancellationToken);
+            
         logger.LogDebug("RabbitMQ publisher channel created");
 
         return _channel;

@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using RabbitMQ.Client;
+using Shared.Events;
 using Shared.Messaging.Abstractions;
 using Shared.Messaging.RabbitMQ.Connection;
+using static Shared.Messaging.Abstractions.MessageHeaders;
 
 namespace Shared.Messaging.RabbitMQ.Tests;
 
@@ -37,7 +39,7 @@ public class RabbitMqMessageBusTests
         var destination = "test-exchange";
 
         // Act
-        await _messageBus.PublishAsync(message, destination);
+        await _messageBus.PublishAsync(message, destination, RequiredHeaders());
 
         // Assert
         await _channel.Received(1).ExchangeDeclareAsync(
@@ -66,7 +68,10 @@ public class RabbitMqMessageBusTests
         _topologyRegistry.GetOptions(typeof(TestMessage)).Returns(new PublishOptions { Destination = destination });
 
         // Act
-        await _messageBus.PublishAsync(new TestMessage("hello"));
+        await _messageBus.PublishAsync(new TestMessage("hello"), new Dictionary<string, string>
+        {
+            { CorrelationId, "test-correlation" }
+        });
 
         // Assert
         await _channel.Received(1).ExchangeDeclareAsync(
@@ -87,7 +92,10 @@ public class RabbitMqMessageBusTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _messageBus.PublishAsync(new TestMessage("hello")));
+            () => _messageBus.PublishAsync(new TestMessage("hello"), new Dictionary<string, string>
+            {
+                { CorrelationId, "test-correlation" }
+            }));
     }
 
     [Fact]
@@ -95,10 +103,9 @@ public class RabbitMqMessageBusTests
     {
         // Arrange
         var destination = "test-exchange";
-        var headers = new Dictionary<string, string> { { "correlation-id", "abc123" } };
 
         // Act
-        await _messageBus.PublishAsync("message", destination, headers);
+        await _messageBus.PublishAsync("message", destination, RequiredHeaders());
 
         // Assert
         await _channel.Received(1).BasicPublishAsync(
@@ -106,28 +113,20 @@ public class RabbitMqMessageBusTests
             routingKey: string.Empty,
             mandatory: false,
             basicProperties: Arg.Is<BasicProperties>(p =>
-                p.Headers != null && p.Headers.ContainsKey("correlation-id")),
+                p.Headers != null && p.Headers.ContainsKey(CorrelationId)),
             body: Arg.Any<ReadOnlyMemory<byte>>(),
             cancellationToken: Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PublishAsync_WithNullHeaders_PublishesWithNullProperties()
+    public async Task PublishAsync_WithMissingRequiredHeaders_Throws()
     {
         // Arrange
         var destination = "test-exchange";
 
-        // Act
-        await _messageBus.PublishAsync("message", destination, headers: null);
-
-        // Assert
-        await _channel.Received(1).BasicPublishAsync(
-            exchange: destination,
-            routingKey: string.Empty,
-            mandatory: false,
-            basicProperties: Arg.Is<BasicProperties>(p => p.Headers == null),
-            body: Arg.Any<ReadOnlyMemory<byte>>(),
-            cancellationToken: Arg.Any<CancellationToken>());
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _messageBus.PublishAsync("message", destination, headers: null));
     }
 
     [Fact]
@@ -137,8 +136,8 @@ public class RabbitMqMessageBusTests
         var destination = "test-exchange";
 
         // Act
-        await _messageBus.PublishAsync("message1", destination);
-        await _messageBus.PublishAsync("message2", destination);
+        await _messageBus.PublishAsync("message1", destination, RequiredHeaders());
+        await _messageBus.PublishAsync("message2", destination, RequiredHeaders());
 
         // Assert — channel created only once
         await _connection.Received(1).CreateChannelAsync(Arg.Any<CreateChannelOptions?>(), Arg.Any<CancellationToken>());
@@ -148,7 +147,7 @@ public class RabbitMqMessageBusTests
     public async Task PublishAsync_CreatesChannelWithPublisherConfirmsEnabled()
     {
         // Act
-        await _messageBus.PublishAsync("message", "exchange");
+        await _messageBus.PublishAsync("message", "exchange", RequiredHeaders());
 
         // Assert — channel was created (publisher confirms configured via CreateChannelOptions)
         await _connection.Received(1).CreateChannelAsync(
@@ -156,5 +155,45 @@ public class RabbitMqMessageBusTests
             Arg.Any<CancellationToken>());
     }
 
-    private sealed record TestMessage(string Value);
+    [Fact]
+    public async Task PublishAsync_WithTypedMessage_AutoPopulatesMessageIdAndOccurredOnUtc()
+    {
+        // Arrange
+        var destination = "typed-exchange";
+        var message = new TestMessage("hello");
+        _topologyRegistry.GetOptions(typeof(TestMessage)).Returns(new PublishOptions { Destination = destination });
+
+        BasicProperties? capturedProps = null;
+        await _channel.BasicPublishAsync(
+            exchange: Arg.Any<string>(),
+            routingKey: Arg.Any<string>(),
+            mandatory: Arg.Any<bool>(),
+            basicProperties: Arg.Do<BasicProperties>(p => capturedProps = p),
+            body: Arg.Any<ReadOnlyMemory<byte>>(),
+            cancellationToken: Arg.Any<CancellationToken>());
+
+        // Act
+        await _messageBus.PublishAsync(message, new Dictionary<string, string>
+        {
+            { CorrelationId, "test-correlation" }
+        });
+
+        // Assert
+        Assert.NotNull(capturedProps?.Headers);
+        Assert.Equal(message.MessageId.ToString(), capturedProps.Headers[MessageId]);
+        Assert.Equal(message.OccurredOnUtc.ToString("O"), capturedProps.Headers[OccurredOnUtc]);
+    }
+
+    private static Dictionary<string, string> RequiredHeaders() => new()
+    {
+        { MessageId,      Guid.NewGuid().ToString() },
+        { OccurredOnUtc,  DateTime.UtcNow.ToString("O") },
+        { CorrelationId,  "test-correlation" }
+    };
+
+    private sealed record TestMessage(string Value) : IEventBase
+    {
+        public Guid MessageId { get; init; } = Guid.NewGuid();
+        public DateTime OccurredOnUtc { get; init; } = DateTime.UtcNow;
+    }
 }

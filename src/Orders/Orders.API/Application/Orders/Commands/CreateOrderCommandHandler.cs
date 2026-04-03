@@ -2,6 +2,7 @@ using Orders.API.Infrastructure;
 
 using Shared.Contracts.Events;
 using Shared.Messaging.Abstractions;
+using static Shared.Messaging.Abstractions.MessageHeaders;
 using Shared.Outbox.Abstractions;
 
 namespace Orders.API.Application.Orders.Commands;
@@ -28,11 +29,11 @@ public class CreateOrderCommandHandler(
 
         var headers = new Dictionary<string, string>
         {
-            { "occurred-on-utc", order.CreatedOnUtc.ToString("O") },
-            { "correlation-id", correlationId },
-            { "causation-id", order.Id.ToString() },
-            { "source", "Orders.API" }
+            { CorrelationId, correlationId },
+            { CausationId, order.Id.ToString() },
+            { Source, "orders-api" }
         };
+
         await messageBus.PublishAsync(@event, headers);
 
         // await outboxPublisher.Publish(@event, "order-created", headers);

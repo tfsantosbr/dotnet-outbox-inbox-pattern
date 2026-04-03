@@ -2,6 +2,7 @@ using Orders.API.Infrastructure;
 
 using Shared.Contracts.Events;
 using Shared.Messaging.Abstractions;
+using static Shared.Messaging.Abstractions.MessageHeaders;
 
 namespace Orders.API.Application.Orders.Commands;
 
@@ -25,14 +26,13 @@ public class UpdateOrderTotalAmountCommandHandler(
             previousTotalAmount: previousTotalAmount,
             newTotalAmount: order.TotalAmount);
 
-        var occurredOnUtc = DateTime.UtcNow;
         var headers = new Dictionary<string, string>
         {
-            { "occurred-on-utc", occurredOnUtc.ToString("O") },
-            { "correlation-id", correlationId },
-            { "causation-id", order.Id.ToString() },
-            { "source", "Orders.API" }
+            { CorrelationId, correlationId },
+            { CausationId, order.Id.ToString() },
+            { Source, "orders-api" }
         };
+        
         await messageBus.PublishAsync(@event, headers);
 
         await dbContext.SaveChangesAsync();

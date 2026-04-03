@@ -1,4 +1,5 @@
 using Orders.API.Application.Orders.Commands;
+using Shared.Messaging.Abstractions;
 
 namespace Orders.API.Endpoints;
 
@@ -14,11 +15,11 @@ public static class OrdersEndpoints
             CreateOrderCommandHandler handler,
             HttpContext httpContext) =>
         {
-            var correlationId = httpContext.Request.Headers["correlation-id"].FirstOrDefault();
+            var correlationId = httpContext.Request.Headers[MessageHeaders.CorrelationId].FirstOrDefault();
             if (string.IsNullOrWhiteSpace(correlationId))
                 return Results.BadRequest(new { error = "correlation-id header is required." });
 
-            httpContext.Response.Headers.Append("correlation-id", correlationId);
+            httpContext.Response.Headers.Append(MessageHeaders.CorrelationId, correlationId);
 
             var id = await handler.HandleAsync(command, correlationId);
             return Results.Created($"/orders/{id}", new { id });
@@ -30,11 +31,11 @@ public static class OrdersEndpoints
             UpdateOrderCustomerCommandHandler handler,
             HttpContext httpContext) =>
         {
-            var correlationId = httpContext.Request.Headers["correlation-id"].FirstOrDefault();
+            var correlationId = httpContext.Request.Headers[MessageHeaders.CorrelationId].FirstOrDefault();
             if (string.IsNullOrWhiteSpace(correlationId))
                 return Results.BadRequest(new { error = "correlation-id header is required." });
 
-            httpContext.Response.Headers.Append("correlation-id", correlationId);
+            httpContext.Response.Headers.Append(MessageHeaders.CorrelationId, correlationId);
 
             var command = new UpdateOrderCustomerCommand(orderId, body.CustomerId);
             var found = await handler.HandleAsync(command, correlationId);
@@ -48,11 +49,11 @@ public static class OrdersEndpoints
             UpdateOrderTotalAmountCommandHandler handler,
             HttpContext httpContext) =>
         {
-            var correlationId = httpContext.Request.Headers["correlation-id"].FirstOrDefault();
+            var correlationId = httpContext.Request.Headers[MessageHeaders.CorrelationId].FirstOrDefault();
             if (string.IsNullOrWhiteSpace(correlationId))
                 return Results.BadRequest(new { error = "correlation-id header is required." });
 
-            httpContext.Response.Headers.Append("correlation-id", correlationId);
+            httpContext.Response.Headers.Append(MessageHeaders.CorrelationId, correlationId);
 
             var command = new UpdateOrderTotalAmountCommand(orderId, body.TotalAmount);
             var found = await handler.HandleAsync(command, correlationId);
