@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+
 using Shared.Outbox.Abstractions;
 using Shared.Outbox.Settings;
 using Shared.Outbox.Storage;
@@ -6,24 +8,30 @@ namespace Shared.Outbox.Tests.Storage;
 
 public class OutboxStorageTests
 {
-    private readonly OutboxSettings _settings;
+    private readonly IOptions<OutboxStorageOptions> _storageOptions;
+    private readonly IOptions<OutboxProcessorOptions> _processorOptions;
     private readonly OutboxStorage _storage;
 
     public OutboxStorageTests()
     {
-        _settings = new OutboxSettings
+        _storageOptions = Options.Create(new OutboxStorageOptions
         {
             ConnectionString = "Data Source=:memory:;",
-            MessagesBatchSize = 10,
-        };
-        _storage = new OutboxStorage(_settings);
+        });
+
+        _processorOptions = Options.Create(new OutboxProcessorOptions
+        {
+            BatchSize = 10,
+        });
+
+        _storage = new OutboxStorage(_storageOptions, _processorOptions);
     }
 
     [Fact]
     public void Constructor_WithValidSettings_ShouldCreateInstance()
     {
         // Arrange & Act
-        var storage = new OutboxStorage(_settings);
+        var storage = new OutboxStorage(_storageOptions, _processorOptions);
 
         // Assert
         Assert.NotNull(storage);

@@ -1,27 +1,38 @@
 using Shared.Events;
+using Shared.Messaging.Abstractions;
 using Shared.Outbox.Abstractions;
 using Shared.Outbox.Database;
 
 namespace Shared.Outbox.Publisher;
 
-public class OutboxPublisher<TContext>(TContext context) : IOutboxPublisher
+public sealed class OutboxPublisher<TContext>(TContext context, IPublishTopologyRegistry topologyRegistry)
+    : IOutboxPublisher
     where TContext : IOutboxDbContext
 {
-    public async Task Publish<TEvent>(
+    public Task PublishAsync<TEvent>(
         TEvent integrationEvent,
-        string destination,
-        IDictionary<string, string>? headers = null
-    )
+        IDictionary<string, string>? headers = null,
+        CancellationToken cancellationToken = default)
         where TEvent : IEventBase
     {
+        var options = GetPublishOptions<TEvent>();
+
         var outboxMessage = OutboxMessage.Create(
-            destination,
+            options.Destination,
             integrationEvent.MessageId,
             integrationEvent,
             integrationEvent.OccurredOnUtc,
             headers
         );
 
-        await context.OutboxMessages.AddAsync(outboxMessage);
+        context.OutboxMessages.Add(outboxMessage);
+
+        return Task.CompletedTask;
     }
+
+    private PublishOptions GetPublishOptions<TEvent>() =>
+        topologyRegistry.GetOptions(typeof(TEvent))
+            ?? throw new InvalidOperationException(
+                $"No PublishOptions registered for '{typeof(TEvent).Name}'. " +
+                $"Call AddPublishOptions<{typeof(TEvent).Name}>() during messaging configuration.");
 }

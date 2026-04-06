@@ -16,7 +16,7 @@ public class OutboxMessage
         Id = id;
         Type = type;
         Content = content;
-        OccurredOn = occurredOn;
+        OccurredOnUtc = occurredOn;
         Headers = headers;
         Destination = destination;
     }
@@ -28,9 +28,9 @@ public class OutboxMessage
     public string Type { get; init; } = string.Empty;
     public string Destination { get; init; } = string.Empty;
     public string Content { get; init; } = string.Empty;
-    public DateTime OccurredOn { get; init; }
-    public DateTime? ProcessedOn { get; private set; }
-    public DateTime? ErrorHandledOn { get; private set; }
+    public DateTime OccurredOnUtc { get; init; }
+    public DateTime? ProcessedOnUtc { get; private set; }
+    public DateTime? ErrorHandledOnUtc { get; private set; }
     public string? Error { get; private set; }
 
     public string GetTypeName()
@@ -44,15 +44,15 @@ public class OutboxMessage
 
     public void MarkAsProcessedWithSuccess()
     {
-        ProcessedOn = DateTime.UtcNow;
+        ProcessedOnUtc = DateTime.UtcNow;
         Error = null;
-        ErrorHandledOn = null;
+        ErrorHandledOnUtc = null;
     }
 
     public void MarkAsProcessedWithError(string error)
     {
-        ProcessedOn = DateTime.UtcNow;
-        ErrorHandledOn = DateTime.UtcNow;
+        ProcessedOnUtc = DateTime.UtcNow;
+        ErrorHandledOnUtc = DateTime.UtcNow;
         Error = error;
     }
 

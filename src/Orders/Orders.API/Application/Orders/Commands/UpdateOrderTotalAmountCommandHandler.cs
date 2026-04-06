@@ -7,7 +7,7 @@ namespace Orders.API.Application.Orders.Commands;
 
 public class UpdateOrderTotalAmountCommandHandler(
     OrdersDbContext dbContext,
-    [FromKeyedServices("orders")] IOutboxPublisher outboxPublisher)
+    IOutboxPublisher outboxPublisher)
 {
     public async Task<bool> HandleAsync(UpdateOrderTotalAmountCommand command, string correlationId)
     {
@@ -32,7 +32,7 @@ public class UpdateOrderTotalAmountCommandHandler(
             { Source, "orders-api" }
         };
 
-        await outboxPublisher.Publish(@event, "order-total-amount-updated", headers);
+        await outboxPublisher.PublishAsync(@event, headers);
 
         await dbContext.SaveChangesAsync();
 

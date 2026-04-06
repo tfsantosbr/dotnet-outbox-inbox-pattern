@@ -18,8 +18,8 @@ public class OutboxMessageEntityConfig(string tableName = "OutboxMessages") : IE
         builder.Property(o => o.Headers).HasColumnType("jsonb");
         builder.Property(o => o.Content).HasColumnType("jsonb");
 
-        builder.HasIndex(o => o.OccurredOn);
-        builder.HasIndex(o => o.ProcessedOn);
-        builder.HasIndex(o => o.ErrorHandledOn);
+        builder.HasIndex(o => o.OccurredOnUtc);
+        builder.HasIndex(o => o.ProcessedOnUtc);
+        builder.HasIndex(o => o.ErrorHandledOnUtc);
     }
 }

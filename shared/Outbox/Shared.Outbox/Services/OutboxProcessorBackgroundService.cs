@@ -1,28 +1,40 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using Polly;
 
 using Shared.Messaging.Abstractions;
 using Shared.Outbox.Abstractions;
+using Shared.Outbox.Database;
 using Shared.Outbox.Settings;
-using Shared.Outbox.Storage;
 
 namespace Shared.Outbox.Services;
 
-public class OutboxProcessorBackgroundService(
+internal sealed class OutboxProcessorBackgroundService<TContext>(
     string moduleName,
-    IMessageBus messageBus,
-    ILogger<OutboxProcessorBackgroundService> logger,
-    IOutboxStorage outboxStorage,
+    string? storageKey,
+    IServiceScopeFactory scopeFactory,
+    ILogger<OutboxProcessorBackgroundService<TContext>> logger,
     ResiliencePipeline resiliencePipeline,
-    OutboxSettings settings
+    IOptions<OutboxProcessorOptions> processorOptions
 ) : BackgroundService
+    where TContext : DbContext, IOutboxDbContext
 {
+    private readonly OutboxProcessorOptions _processor = processorOptions.Value;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+            var outboxStorage = storageKey is null
+                ? scope.ServiceProvider.GetRequiredService<IOutboxStorage>()
+                : scope.ServiceProvider.GetRequiredKeyedService<IOutboxStorage>(storageKey);
+
             var messages = await outboxStorage.GetMessagesAsync(stoppingToken);
 
             foreach (var message in messages)
@@ -31,7 +43,7 @@ public class OutboxProcessorBackgroundService(
 
                 using (logger.BeginScope(headers ?? []))
                 {
-                    await ProcessMessage(message, headers, stoppingToken);
+                    await ProcessMessage(message, headers, messageBus, stoppingToken);
 
                     await outboxStorage.UpdateMessageAsync(message, stoppingToken);
                 }
@@ -39,13 +51,14 @@ public class OutboxProcessorBackgroundService(
 
             await outboxStorage.CommitAsync(stoppingToken);
 
-            await Task.Delay(TimeSpan.FromSeconds(settings.IntervalInSeconds), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(_processor.IntervalInSeconds), stoppingToken);
         }
     }
 
     private async Task ProcessMessage(
         OutboxMessage message,
         Dictionary<string, string>? headers,
+        IMessageBus messageBus,
         CancellationToken stoppingToken
     )
     {
@@ -97,7 +110,7 @@ public class OutboxProcessorBackgroundService(
                             : [];
 
         mergedHeaders[MessageHeaders.MessageId] = message.Id.ToString();
-        mergedHeaders[MessageHeaders.OccurredOnUtc] = message.OccurredOn.ToString("O");
+        mergedHeaders[MessageHeaders.OccurredOnUtc] = message.OccurredOnUtc.ToString("O");
 
         return mergedHeaders;
     }

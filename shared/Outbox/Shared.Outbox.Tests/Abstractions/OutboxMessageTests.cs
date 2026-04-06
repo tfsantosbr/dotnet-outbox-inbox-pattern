@@ -23,11 +23,11 @@ public class OutboxMessageTests
         // Assert
         Assert.Equal(id, message.Id);
         Assert.Equal(destination, message.Destination);
-        Assert.Equal(occurredOn, message.OccurredOn);
+        Assert.Equal(occurredOn, message.OccurredOnUtc);
         Assert.NotNull(message.Content);
         Assert.NotNull(message.Type);
-        Assert.Null(message.ProcessedOn);
-        Assert.Null(message.ErrorHandledOn);
+        Assert.Null(message.ProcessedOnUtc);
+        Assert.Null(message.ErrorHandledOnUtc);
         Assert.Null(message.Error);
     }
 
@@ -107,9 +107,9 @@ public class OutboxMessageTests
         var afterProcessing = DateTime.UtcNow;
 
         // Assert
-        Assert.NotNull(message.ProcessedOn);
-        Assert.True(message.ProcessedOn >= beforeProcessing);
-        Assert.True(message.ProcessedOn <= afterProcessing);
+        Assert.NotNull(message.ProcessedOnUtc);
+        Assert.True(message.ProcessedOnUtc >= beforeProcessing);
+        Assert.True(message.ProcessedOnUtc <= afterProcessing);
     }
 
     [Fact]
@@ -131,12 +131,12 @@ public class OutboxMessageTests
 
         // Assert
         Assert.Equal(errorMessage, message.Error);
-        Assert.NotNull(message.ErrorHandledOn);
-        Assert.NotNull(message.ProcessedOn);
-        Assert.True(message.ErrorHandledOn >= beforeFailure);
-        Assert.True(message.ErrorHandledOn <= afterFailure);
-        Assert.True(message.ProcessedOn >= beforeFailure);
-        Assert.True(message.ProcessedOn <= afterFailure);
+        Assert.NotNull(message.ErrorHandledOnUtc);
+        Assert.NotNull(message.ProcessedOnUtc);
+        Assert.True(message.ErrorHandledOnUtc >= beforeFailure);
+        Assert.True(message.ErrorHandledOnUtc <= afterFailure);
+        Assert.True(message.ProcessedOnUtc >= beforeFailure);
+        Assert.True(message.ProcessedOnUtc <= afterFailure);
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public class OutboxMessageTests
             baseTime
         );
         message.MarkAsProcessedWithSuccess();
-        var firstProcessedOn = message.ProcessedOn;
+        var firstProcessedOn = message.ProcessedOnUtc;
 
         // Act
         // Simulate a delay by creating a new message with a later timestamp
@@ -244,7 +244,7 @@ public class OutboxMessageTests
             baseTime
         );
         message.MarkAsProcessedWithSuccess();
-        var originalProcessedOn = message.ProcessedOn;
+        var originalProcessedOn = message.ProcessedOnUtc;
 
         // Act
         // Simulate time passage by using reflection to set a later timestamp
@@ -252,9 +252,9 @@ public class OutboxMessageTests
         message.MarkAsProcessedWithError("Error occurred");
 
         // Assert
-        Assert.NotNull(message.ProcessedOn);
+        Assert.NotNull(message.ProcessedOnUtc);
         Assert.NotNull(message.Error);
-        Assert.NotNull(message.ErrorHandledOn);
+        Assert.NotNull(message.ErrorHandledOnUtc);
         Assert.Equal("Error occurred", message.Error);
     }
 
@@ -288,7 +288,7 @@ public class OutboxMessageTests
 
         // Assert
         Assert.Null(message.Error);
-        Assert.NotNull(message.ErrorHandledOn);
-        Assert.NotNull(message.ProcessedOn);
+        Assert.NotNull(message.ErrorHandledOnUtc);
+        Assert.NotNull(message.ProcessedOnUtc);
     }
 }

@@ -27,7 +27,7 @@ public class OutboxExtensionsTests
                 entity.Property(e => e.Type).IsRequired();
                 entity.Property(e => e.Destination).IsRequired();
                 entity.Property(e => e.Content).IsRequired();
-                entity.Property(e => e.OccurredOn).IsRequired();
+                entity.Property(e => e.OccurredOnUtc).IsRequired();
             });
         }
     }
@@ -43,14 +43,37 @@ public class OutboxExtensionsTests
     }
 
     [Fact]
-    public void AddOutboxServices_ShouldRegisterOutboxPublisherAsKeyedScoped()
+    public void AddOutbox_ShouldRegisterOutboxPublisherAsScoped()
     {
         // Arrange
         var services = CreateBaseServices();
         const string moduleName = "orders";
 
         // Act
-        services.AddOutboxServices<TestDbContext>(moduleName, "Host=localhost", 5, 10);
+        services.AddOutbox<TestDbContext>(moduleName)
+            .UsePostgresStorage(o => o.ConnectionString = "Host=localhost")
+            .WithSettings(o => { o.IntervalInSeconds = 5; o.BatchSize = 10; });
+
+        // Assert
+        var descriptor = services.FirstOrDefault(d =>
+            d.ServiceType == typeof(IOutboxPublisher) &&
+            d.ServiceKey is null);
+
+        Assert.NotNull(descriptor);
+        Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime);
+    }
+
+    [Fact]
+    public void AddKeyedOutbox_ShouldRegisterOutboxPublisherAsKeyedScoped()
+    {
+        // Arrange
+        var services = CreateBaseServices();
+        const string moduleName = "orders";
+
+        // Act
+        services.AddKeyedOutbox<TestDbContext>(moduleName)
+            .UsePostgresStorage(o => o.ConnectionString = "Host=localhost")
+            .WithSettings(o => { o.IntervalInSeconds = 5; o.BatchSize = 10; });
 
         // Assert
         var descriptor = services.FirstOrDefault(d =>
@@ -62,13 +85,54 @@ public class OutboxExtensionsTests
     }
 
     [Fact]
-    public void AddOutboxServices_ShouldRegisterHostedService()
+    public void AddOutbox_ShouldRegisterOutboxStorageAsTransient()
+    {
+        // Arrange
+        var services = CreateBaseServices();
+        const string moduleName = "orders";
+
+        // Act
+        services.AddOutbox<TestDbContext>(moduleName)
+            .UsePostgresStorage(o => o.ConnectionString = "Host=localhost");
+
+        // Assert
+        var descriptor = services.FirstOrDefault(d =>
+            d.ServiceType == typeof(IOutboxStorage) &&
+            d.ServiceKey is null);
+
+        Assert.NotNull(descriptor);
+        Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime);
+    }
+
+    [Fact]
+    public void AddKeyedOutbox_ShouldRegisterOutboxStorageAsKeyedTransient()
+    {
+        // Arrange
+        var services = CreateBaseServices();
+        const string moduleName = "orders";
+
+        // Act
+        services.AddKeyedOutbox<TestDbContext>(moduleName)
+            .UsePostgresStorage(o => o.ConnectionString = "Host=localhost");
+
+        // Assert
+        var descriptor = services.FirstOrDefault(d =>
+            d.ServiceType == typeof(IOutboxStorage) &&
+            d.ServiceKey is string key && key == moduleName);
+
+        Assert.NotNull(descriptor);
+        Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime);
+    }
+
+    [Fact]
+    public void AddOutbox_ShouldRegisterHostedService()
     {
         // Arrange
         var services = CreateBaseServices();
 
         // Act
-        services.AddOutboxServices<TestDbContext>("orders", "Host=localhost", 5, 10);
+        services.AddOutbox<TestDbContext>("orders")
+            .UsePostgresStorage(o => o.ConnectionString = "Host=localhost");
 
         // Assert
         var descriptor = services.FirstOrDefault(d =>
@@ -78,24 +142,26 @@ public class OutboxExtensionsTests
     }
 
     [Fact]
-    public void AddOutboxServices_ShouldReturnServiceCollection()
+    public void AddOutbox_ShouldReturnOutboxBuilder()
     {
         // Arrange
         var services = CreateBaseServices();
 
         // Act
-        var result = services.AddOutboxServices<TestDbContext>("orders", "Host=localhost", 5, 10);
+        var builder = services.AddOutbox<TestDbContext>("orders");
 
         // Assert
-        Assert.Same(services, result);
+        Assert.NotNull(builder);
+        Assert.Same(services, builder.Services);
     }
 
     [Fact]
-    public void AddOutboxServices_WhenProviderIsBuilt_ShouldResolveHostedService()
+    public void AddOutbox_WhenProviderIsBuilt_ShouldResolveHostedService()
     {
         // Arrange
         var services = CreateBaseServices();
-        services.AddOutboxServices<TestDbContext>("orders", "Host=localhost", 5, 10);
+        services.AddOutbox<TestDbContext>("orders")
+            .UsePostgresStorage(o => o.ConnectionString = "Host=localhost");
 
         // Act
         var provider = services.BuildServiceProvider();
@@ -103,5 +169,27 @@ public class OutboxExtensionsTests
 
         // Assert
         Assert.NotEmpty(hostedServices);
+    }
+
+    [Fact]
+    public void AddKeyedOutbox_TwoModules_ShouldRegisterIndependentStorages()
+    {
+        // Arrange
+        var services = CreateBaseServices();
+
+        // Act
+        services.AddKeyedOutbox<TestDbContext>("orders")
+            .UsePostgresStorage(o => { o.ConnectionString = "Host=localhost;Database=orders"; });
+        services.AddKeyedOutbox<TestDbContext>("inventory")
+            .UsePostgresStorage(o => { o.ConnectionString = "Host=localhost;Database=inventory"; });
+
+        // Assert
+        var storageDescriptors = services
+            .Where(d => d.ServiceType == typeof(IOutboxStorage))
+            .ToList();
+
+        Assert.Equal(2, storageDescriptors.Count);
+        Assert.Contains(storageDescriptors, d => d.ServiceKey is "orders");
+        Assert.Contains(storageDescriptors, d => d.ServiceKey is "inventory");
     }
 }

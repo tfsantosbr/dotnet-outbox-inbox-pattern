@@ -1,6 +1,4 @@
-using Shared.Outbox.Abstractions;
-
-namespace Shared.Outbox.Storage;
+namespace Shared.Outbox.Abstractions;
 
 public interface IOutboxStorage
 {

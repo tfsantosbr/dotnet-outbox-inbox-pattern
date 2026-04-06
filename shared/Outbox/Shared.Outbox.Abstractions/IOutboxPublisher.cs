@@ -4,10 +4,9 @@ namespace Shared.Outbox.Abstractions;
 
 public interface IOutboxPublisher
 {
-    Task Publish<TEvent>(
+    Task PublishAsync<TEvent>(
         TEvent integrationEvent,
-        string destination,
-        IDictionary<string, string>? headers = null
-    )
+        IDictionary<string, string>? headers = null,
+        CancellationToken cancellationToken = default)
         where TEvent : IEventBase;
 }

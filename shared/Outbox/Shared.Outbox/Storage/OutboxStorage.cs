@@ -1,5 +1,7 @@
 using Dapper;
 
+using Microsoft.Extensions.Options;
+
 using Npgsql;
 
 using Shared.Outbox.Abstractions;
@@ -7,8 +9,13 @@ using Shared.Outbox.Settings;
 
 namespace Shared.Outbox.Storage;
 
-public class OutboxStorage(OutboxSettings settings) : IOutboxStorage
+public class OutboxStorage(
+    IOptions<OutboxStorageOptions> storageOptions,
+    IOptions<OutboxProcessorOptions> processorOptions
+) : IOutboxStorage, IAsyncDisposable
 {
+    private readonly OutboxStorageOptions _storage = storageOptions.Value;
+    private readonly OutboxProcessorOptions _processor = processorOptions.Value;
     private NpgsqlConnection? _connection;
     private NpgsqlTransaction? _transaction;
 
@@ -16,23 +23,23 @@ public class OutboxStorage(OutboxSettings settings) : IOutboxStorage
         CancellationToken cancellationToken
     )
     {
-        _connection = new NpgsqlConnection(settings.ConnectionString);
+        _connection = new NpgsqlConnection(_storage.ConnectionString);
         await _connection.OpenAsync(cancellationToken);
 
         _transaction = await _connection.BeginTransactionAsync(cancellationToken);
 
         var sql = $"""
             SELECT *
-            FROM "{settings.Schema}"."{settings.TableName}"
-            WHERE "ProcessedOn" IS NULL
-            ORDER BY "OccurredOn"
-            LIMIT @MessagesBatchSize
+            FROM "{_storage.Schema}"."{_storage.TableName}"
+            WHERE "ProcessedOnUtc" IS NULL
+            ORDER BY "OccurredOnUtc"
+            LIMIT @BatchSize
             FOR UPDATE;
             """;
 
         var messages = await _connection.QueryAsync<OutboxMessage>(
             sql,
-            new { settings.MessagesBatchSize },
+            new { _processor.BatchSize },
             _transaction
         );
 
@@ -42,10 +49,10 @@ public class OutboxStorage(OutboxSettings settings) : IOutboxStorage
     public async Task UpdateMessageAsync(OutboxMessage message, CancellationToken cancellationToken)
     {
         var sql = $"""
-            UPDATE "{settings.Schema}"."{settings.TableName}"
-            SET "ProcessedOn" = @ProcessedOn,
+            UPDATE "{_storage.Schema}"."{_storage.TableName}"
+            SET "ProcessedOnUtc" = @ProcessedOnUtc,
                 "Error" = @Error,
-                "ErrorHandledOn" = @ErrorHandledOn
+                "ErrorHandledOnUtc" = @ErrorHandledOnUtc
             WHERE "Id" = @Id;
             """;
 
@@ -53,9 +60,9 @@ public class OutboxStorage(OutboxSettings settings) : IOutboxStorage
             sql,
             new
             {
-                message.ProcessedOn,
+                message.ProcessedOnUtc,
                 message.Error,
-                message.ErrorHandledOn,
+                message.ErrorHandledOnUtc,
                 message.Id,
             },
             _transaction
@@ -68,5 +75,13 @@ public class OutboxStorage(OutboxSettings settings) : IOutboxStorage
 
         await _transaction.DisposeAsync();
         await _connection!.DisposeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_transaction is not null)
+            await _transaction.DisposeAsync();
+        if (_connection is not null)
+            await _connection.DisposeAsync();
     }
 }

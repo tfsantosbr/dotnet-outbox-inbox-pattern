@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 
+using NSubstitute;
+
 using Shared.Events;
+using Shared.Messaging.Abstractions;
 using Shared.Outbox.Abstractions;
 using Shared.Outbox.Database;
 using Shared.Outbox.Publisher;
@@ -23,10 +26,10 @@ public class OutboxPublisherTests
                 entity.Property(e => e.Type).IsRequired();
                 entity.Property(e => e.Destination).IsRequired();
                 entity.Property(e => e.Content).IsRequired();
-                entity.Property(e => e.OccurredOn).IsRequired();
+                entity.Property(e => e.OccurredOnUtc).IsRequired();
                 entity.Property(e => e.Headers);
-                entity.Property(e => e.ProcessedOn);
-                entity.Property(e => e.ErrorHandledOn);
+                entity.Property(e => e.ProcessedOnUtc);
+                entity.Property(e => e.ErrorHandledOnUtc);
                 entity.Property(e => e.Error);
             });
         }
@@ -40,31 +43,42 @@ public class OutboxPublisherTests
         return new TestOutboxDbContext(options);
     }
 
+    private static IPublishTopologyRegistry CreateRegistry(string destination)
+    {
+        var registry = Substitute.For<IPublishTopologyRegistry>();
+        registry.GetOptions(typeof(TestIntegrationEvent))
+            .Returns(new PublishOptions { Destination = destination });
+        return registry;
+    }
+
     [Fact]
-    public async Task Publish_WhenCalled_ShouldAddOutboxMessageToContext()
+    public async Task PublishAsync_WhenCalled_ShouldAddOutboxMessageToContext()
     {
         // Arrange
+        const string expectedDestination = "test-destination";
         await using var context = CreateInMemoryContext();
-        var publisher = new OutboxPublisher<TestOutboxDbContext>(context);
+        var registry = CreateRegistry(expectedDestination);
+        var publisher = new OutboxPublisher<TestOutboxDbContext>(context, registry);
         var integrationEvent = new TestIntegrationEvent { MessageId = Guid.NewGuid(), OccurredOnUtc = DateTime.UtcNow };
 
         // Act
-        await publisher.Publish(integrationEvent, "test-destination");
+        await publisher.PublishAsync(integrationEvent);
         await context.SaveChangesAsync();
 
         // Assert
         var messages = context.OutboxMessages.ToList();
         Assert.Single(messages);
         Assert.Equal(integrationEvent.MessageId, messages[0].Id);
-        Assert.Equal("test-destination", messages[0].Destination);
+        Assert.Equal(expectedDestination, messages[0].Destination);
     }
 
     [Fact]
-    public async Task Publish_WhenCalledWithHeaders_ShouldAddMessageWithHeaders()
+    public async Task PublishAsync_WhenCalledWithHeaders_ShouldAddMessageWithHeaders()
     {
         // Arrange
         await using var context = CreateInMemoryContext();
-        var publisher = new OutboxPublisher<TestOutboxDbContext>(context);
+        var registry = CreateRegistry("test-destination");
+        var publisher = new OutboxPublisher<TestOutboxDbContext>(context, registry);
         var integrationEvent = new TestIntegrationEvent { MessageId = Guid.NewGuid(), OccurredOnUtc = DateTime.UtcNow };
         var headers = new Dictionary<string, string>
         {
@@ -73,7 +87,7 @@ public class OutboxPublisherTests
         };
 
         // Act
-        await publisher.Publish(integrationEvent, "test-destination", headers);
+        await publisher.PublishAsync(integrationEvent, headers);
         await context.SaveChangesAsync();
 
         // Assert
@@ -86,20 +100,36 @@ public class OutboxPublisherTests
     }
 
     [Fact]
-    public async Task Publish_WhenCalledWithNullHeaders_ShouldAddMessageWithNullHeaders()
+    public async Task PublishAsync_WhenCalledWithNullHeaders_ShouldAddMessageWithNullHeaders()
     {
         // Arrange
         await using var context = CreateInMemoryContext();
-        var publisher = new OutboxPublisher<TestOutboxDbContext>(context);
+        var registry = CreateRegistry("test-destination");
+        var publisher = new OutboxPublisher<TestOutboxDbContext>(context, registry);
         var integrationEvent = new TestIntegrationEvent { MessageId = Guid.NewGuid(), OccurredOnUtc = DateTime.UtcNow };
 
         // Act
-        await publisher.Publish(integrationEvent, "test-destination", null);
+        await publisher.PublishAsync(integrationEvent, null);
         await context.SaveChangesAsync();
 
         // Assert
         var messages = context.OutboxMessages.ToList();
         Assert.Single(messages);
         Assert.Null(messages[0].Headers);
+    }
+
+    [Fact]
+    public async Task PublishAsync_WhenNoOptionsRegistered_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        await using var context = CreateInMemoryContext();
+        var registry = Substitute.For<IPublishTopologyRegistry>();
+        registry.GetOptions(typeof(TestIntegrationEvent)).Returns((PublishOptions?)null);
+        var publisher = new OutboxPublisher<TestOutboxDbContext>(context, registry);
+        var integrationEvent = new TestIntegrationEvent { MessageId = Guid.NewGuid(), OccurredOnUtc = DateTime.UtcNow };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => publisher.PublishAsync(integrationEvent));
     }
 }

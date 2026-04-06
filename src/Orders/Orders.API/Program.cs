@@ -38,13 +38,18 @@ builder.Services
 
 // Outbox
 
-builder.Services.AddOutboxServices<OrdersDbContext>(
-    moduleName: "orders",
-    connectionString: configuration.GetConnectionString("Database")!,
-    intervalInSeconds: 10,
-    messagesBatchSize: 30,
-    tableName: "outbox_messages"
-);
+builder.Services.AddOutbox<OrdersDbContext>("orders")
+    .UsePostgresStorage(o =>
+    {
+        o.ConnectionString = configuration.GetConnectionString("Database")!;
+        o.Schema = "orders";
+        o.TableName = "outbox_messages";
+    })
+    .WithSettings(o =>
+    {
+        o.IntervalInSeconds = 10;
+        o.BatchSize = 30;
+    });
 
 builder.Services.AddScoped<CreateOrderCommandHandler>();
 builder.Services.AddScoped<UpdateOrderCustomerCommandHandler>();

@@ -1,12 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
-using Shared.Messaging.Abstractions;
 using Shared.Outbox.Abstractions;
 using Shared.Outbox.Database;
 using Shared.Outbox.Publisher;
-using Shared.Outbox.Resilience;
 using Shared.Outbox.Services;
 using Shared.Outbox.Settings;
 using Shared.Outbox.Storage;
@@ -15,49 +14,57 @@ namespace Shared.Outbox.Extensions;
 
 public static class OutboxExtensions
 {
-    public static IServiceCollection AddOutboxServices<TDbContext>(
+    public static OutboxBuilder AddOutbox<TDbContext>(
         this IServiceCollection services,
-        string moduleName,
-        string connectionString,
-        int intervalInSeconds,
-        int messagesBatchSize,
-        string tableName = "OutboxMessages"
-    )
+        string moduleName)
         where TDbContext : DbContext, IOutboxDbContext
     {
-        services.AddKeyedScoped<IOutboxPublisher, OutboxPublisher<TDbContext>>(moduleName);
+        var builder = new OutboxBuilder(services, moduleName);
+
+        services.AddScoped<IOutboxPublisher, OutboxPublisher<TDbContext>>();
+
+        services.AddTransient<IOutboxStorage>(
+            _ => new OutboxStorage(
+                Options.Create(builder.StorageOptions),
+                Options.Create(builder.ProcessorOptions)));
 
         services.AddHostedService(sp =>
-        {
-            var settings = new OutboxSettings
-            {
-                ConnectionString = connectionString,
-                Schema = moduleName,
-                TableName = tableName,
-                IntervalInSeconds = intervalInSeconds,
-                MessagesBatchSize = messagesBatchSize,
-            };
-
-            var resiliencePipeline = OutboxResilience.CreateDefault();
-            var logger = sp.GetRequiredService<ILogger<OutboxProcessorBackgroundService>>();
-
-            var scope = sp.CreateScope();
-            var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-
-            var outboxStorage = new OutboxStorage(settings);
-
-            var outboxProcessor = new OutboxProcessorBackgroundService(
+            new OutboxProcessorBackgroundService<TDbContext>(
                 moduleName,
-                messageBus,
-                logger,
-                outboxStorage,
-                resiliencePipeline,
-                settings
-            );
+                storageKey: null,
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                sp.GetRequiredService<ILogger<OutboxProcessorBackgroundService<TDbContext>>>(),
+                builder.ResiliencePipeline,
+                Options.Create(builder.ProcessorOptions)
+            ));
 
-            return outboxProcessor;
-        });
+        return builder;
+    }
 
-        return services;
+    public static OutboxBuilder AddKeyedOutbox<TDbContext>(
+        this IServiceCollection services,
+        string moduleName)
+        where TDbContext : DbContext, IOutboxDbContext
+    {
+        var builder = new OutboxBuilder(services, moduleName);
+
+        services.AddKeyedScoped<IOutboxPublisher, OutboxPublisher<TDbContext>>(moduleName);
+
+        services.AddKeyedTransient<IOutboxStorage>(moduleName,
+            (_, _) => new OutboxStorage(
+                Options.Create(builder.StorageOptions),
+                Options.Create(builder.ProcessorOptions)));
+
+        services.AddHostedService(sp =>
+            new OutboxProcessorBackgroundService<TDbContext>(
+                moduleName,
+                storageKey: moduleName,
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                sp.GetRequiredService<ILogger<OutboxProcessorBackgroundService<TDbContext>>>(),
+                builder.ResiliencePipeline,
+                Options.Create(builder.ProcessorOptions)
+            ));
+
+        return builder;
     }
 }

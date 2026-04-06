@@ -1,4 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -7,38 +11,51 @@ using Polly;
 
 using Shared.Messaging.Abstractions;
 using Shared.Outbox.Abstractions;
+using Shared.Outbox.Database;
 using Shared.Outbox.Services;
 using Shared.Outbox.Settings;
-using Shared.Outbox.Storage;
 
 namespace Shared.Outbox.Tests.Services;
 
 public class OutboxProcessorBackgroundServiceTests
 {
-    private static OutboxMessage CreateTestMessage(string destination = "test-destination")
+    private sealed class TestDbContext(DbContextOptions<TestDbContext> options)
+        : DbContext(options), IOutboxDbContext
     {
-        return OutboxMessage.Create(destination, Guid.NewGuid(), new { Name = "Test" }, DateTime.UtcNow);
+        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     }
 
-    private static OutboxProcessorBackgroundService CreateService(
+    private const string ModuleName = "test-module";
+
+    private static OutboxMessage CreateTestMessage(string destination = "test-destination") =>
+        OutboxMessage.Create(destination, Guid.NewGuid(), new { Name = "Test" }, DateTime.UtcNow);
+
+    private static OutboxProcessorBackgroundService<TestDbContext> CreateService(
         IMessageBus messageBus,
         IOutboxStorage outboxStorage,
-        OutboxSettings? settings = null)
+        OutboxProcessorOptions? processorOptions = null)
     {
-        var logger = Substitute.For<ILogger<OutboxProcessorBackgroundService>>();
-        var resolvedSettings = settings ?? new OutboxSettings
+        var options = processorOptions ?? new OutboxProcessorOptions
         {
             IntervalInSeconds = 0,
-            MessagesBatchSize = 10,
+            BatchSize = 10,
         };
 
-        return new OutboxProcessorBackgroundService(
-            "test-module",
-            messageBus,
+        var services = new ServiceCollection();
+        services.AddSingleton(messageBus);
+        services.AddTransient<IOutboxStorage>(_ => outboxStorage);
+
+        var provider = services.BuildServiceProvider();
+        var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
+        var logger = NullLogger<OutboxProcessorBackgroundService<TestDbContext>>.Instance;
+
+        return new OutboxProcessorBackgroundService<TestDbContext>(
+            ModuleName,
+            storageKey: null,
+            scopeFactory,
             logger,
-            outboxStorage,
             ResiliencePipeline.Empty,
-            resolvedSettings
+            Options.Create(options)
         );
     }
 
@@ -130,7 +147,7 @@ public class OutboxProcessorBackgroundServiceTests
             .Received()
             .UpdateMessageAsync(message, Arg.Any<CancellationToken>());
 
-        Assert.NotNull(message.ProcessedOn);
+        Assert.NotNull(message.ProcessedOnUtc);
         Assert.Null(message.Error);
     }
 
@@ -171,7 +188,7 @@ public class OutboxProcessorBackgroundServiceTests
             .Received()
             .UpdateMessageAsync(message, Arg.Any<CancellationToken>());
 
-        Assert.NotNull(message.ProcessedOn);
+        Assert.NotNull(message.ProcessedOnUtc);
         Assert.NotNull(message.Error);
         Assert.Equal(exceptionMessage, message.Error);
     }

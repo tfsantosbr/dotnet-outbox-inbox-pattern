@@ -24,4 +24,9 @@
     <ProjectReference Include="..\Shared.Outbox.Abstractions\Shared.Outbox.Abstractions.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Shared.Outbox.Tests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
 </Project>

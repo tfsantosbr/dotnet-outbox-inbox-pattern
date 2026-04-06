@@ -7,7 +7,7 @@ namespace Orders.API.Application.Orders.Commands;
 
 public class CreateOrderCommandHandler(
     OrdersDbContext dbContext,
-    [FromKeyedServices("orders")] IOutboxPublisher outboxPublisher)
+    IOutboxPublisher outboxPublisher)
 {
     public async Task<Guid> HandleAsync(CreateOrderCommand command, string correlationId)
     {
@@ -31,7 +31,7 @@ public class CreateOrderCommandHandler(
             { Source, "orders-api" }
         };
 
-        await outboxPublisher.Publish(@event, "order-created", headers);
+        await outboxPublisher.PublishAsync(@event, headers);
 
         await dbContext.SaveChangesAsync();
 
