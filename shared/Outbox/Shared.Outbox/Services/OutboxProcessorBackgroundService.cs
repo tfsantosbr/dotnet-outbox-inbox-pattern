@@ -14,11 +14,11 @@ using Shared.Outbox.Settings;
 
 namespace Shared.Outbox.Services;
 
-internal sealed class OutboxProcessorBackgroundService<TContext>(
+internal sealed class OutboxProcessor<TContext>(
     string moduleName,
     string? storageKey,
     IServiceScopeFactory scopeFactory,
-    ILogger<OutboxProcessorBackgroundService<TContext>> logger,
+    ILogger<OutboxProcessor<TContext>> logger,
     ResiliencePipeline resiliencePipeline,
     IOptions<OutboxProcessorOptions> processorOptions,
     IOutboxMetrics? metrics = null

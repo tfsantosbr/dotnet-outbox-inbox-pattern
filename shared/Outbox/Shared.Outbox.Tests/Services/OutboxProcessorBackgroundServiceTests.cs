@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -17,7 +16,7 @@ using Shared.Outbox.Settings;
 
 namespace Shared.Outbox.Tests.Services;
 
-public class OutboxProcessorBackgroundServiceTests
+public class OutboxProcessorTests
 {
     private sealed class TestDbContext(DbContextOptions<TestDbContext> options)
         : DbContext(options), IOutboxDbContext
@@ -30,7 +29,7 @@ public class OutboxProcessorBackgroundServiceTests
     private static OutboxMessage CreateTestMessage(string destination = "test-destination") =>
         OutboxMessage.Create(destination, Guid.NewGuid(), new { Name = "Test" }, DateTime.UtcNow);
 
-    private static OutboxProcessorBackgroundService<TestDbContext> CreateService(
+    private static OutboxProcessor<TestDbContext> CreateService(
         IMessageBus messageBus,
         IOutboxStorage outboxStorage,
         OutboxProcessorOptions? processorOptions = null)
@@ -47,9 +46,9 @@ public class OutboxProcessorBackgroundServiceTests
 
         var provider = services.BuildServiceProvider();
         var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
-        var logger = NullLogger<OutboxProcessorBackgroundService<TestDbContext>>.Instance;
+        var logger = NullLogger<OutboxProcessor<TestDbContext>>.Instance;
 
-        return new OutboxProcessorBackgroundService<TestDbContext>(
+        return new OutboxProcessor<TestDbContext>(
             ModuleName,
             storageKey: null,
             scopeFactory,

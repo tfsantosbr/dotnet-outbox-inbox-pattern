@@ -30,11 +30,11 @@ public static class OutboxExtensions
                 Options.Create(builder.ProcessorOptions)));
 
         services.AddHostedService(sp =>
-            new OutboxProcessorBackgroundService<TDbContext>(
+            new OutboxProcessor<TDbContext>(
                 moduleName,
                 storageKey: null,
                 sp.GetRequiredService<IServiceScopeFactory>(),
-                sp.GetRequiredService<ILogger<OutboxProcessorBackgroundService<TDbContext>>>(),
+                sp.GetRequiredService<ILogger<OutboxProcessor<TDbContext>>>(),
                 builder.ResiliencePipeline,
                 Options.Create(builder.ProcessorOptions),
                 sp.GetService<IOutboxMetrics>()
@@ -58,11 +58,11 @@ public static class OutboxExtensions
                 Options.Create(builder.ProcessorOptions)));
 
         services.AddHostedService(sp =>
-            new OutboxProcessorBackgroundService<TDbContext>(
+            new OutboxProcessor<TDbContext>(
                 moduleName,
                 storageKey: moduleName,
                 sp.GetRequiredService<IServiceScopeFactory>(),
-                sp.GetRequiredService<ILogger<OutboxProcessorBackgroundService<TDbContext>>>(),
+                sp.GetRequiredService<ILogger<OutboxProcessor<TDbContext>>>(),
                 builder.ResiliencePipeline,
                 Options.Create(builder.ProcessorOptions),
                 sp.GetKeyedService<IOutboxMetrics>(moduleName)
