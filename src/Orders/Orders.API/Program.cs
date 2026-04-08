@@ -11,6 +11,7 @@ using Shared.Messaging.Abstractions.Extensions;
 using Shared.Messaging.RabbitMQ.Extensions;
 using Shared.Messaging.RabbitMQ.Options;
 using Shared.Outbox.Extensions;
+using Shared.Outbox.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -80,7 +81,7 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddRuntimeInstrumentation()
-        .AddMeter(Shared.Outbox.Metrics.OutboxInstrumentation.MeterName)
+        .AddMeter(OutboxInstrumentation.MeterName)
         .AddOtlpExporter());
 
 var app = builder.Build();
