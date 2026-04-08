@@ -53,7 +53,8 @@ builder.Services.AddOutbox<OrdersDbContext>("orders")
     {
         o.IntervalInSeconds = 10;
         o.BatchSize = 30;
-    });
+    })
+    .WithMetrics();
 
 builder.Services.AddScoped<CreateOrderCommandHandler>();
 builder.Services.AddScoped<UpdateOrderCustomerCommandHandler>();
@@ -79,6 +80,7 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddRuntimeInstrumentation()
+        .AddMeter(Shared.Outbox.Metrics.OutboxInstrumentation.MeterName)
         .AddOtlpExporter());
 
 var app = builder.Build();
