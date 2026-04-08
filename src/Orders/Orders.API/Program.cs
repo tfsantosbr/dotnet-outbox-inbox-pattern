@@ -11,6 +11,7 @@ using Shared.Messaging.Abstractions.Extensions;
 using Shared.Messaging.RabbitMQ.Extensions;
 using Shared.Messaging.RabbitMQ.Options;
 using Shared.Outbox.Extensions;
+using Shared.Outbox.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -53,7 +54,8 @@ builder.Services.AddOutbox<OrdersDbContext>("orders")
     {
         o.IntervalInSeconds = 10;
         o.BatchSize = 30;
-    });
+    })
+    .WithMetrics();
 
 builder.Services.AddScoped<CreateOrderCommandHandler>();
 builder.Services.AddScoped<UpdateOrderCustomerCommandHandler>();
@@ -79,6 +81,7 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddHttpClientInstrumentation()
         .AddRuntimeInstrumentation()
+        .AddMeter(OutboxInstrumentation.MeterName)
         .AddOtlpExporter());
 
 var app = builder.Build();
@@ -86,6 +89,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
+    db.Database.ExecuteSqlRaw("CREATE SCHEMA IF NOT EXISTS orders");
     db.Database.Migrate();
 }
 

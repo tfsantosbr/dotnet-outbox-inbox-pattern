@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 
 using Shared.Outbox.Abstractions;
 using Shared.Outbox.Database;
+using Shared.Outbox.Metrics;
 using Shared.Outbox.Publisher;
 using Shared.Outbox.Services;
 using Shared.Outbox.Settings;
@@ -35,7 +36,8 @@ public static class OutboxExtensions
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 sp.GetRequiredService<ILogger<OutboxProcessorBackgroundService<TDbContext>>>(),
                 builder.ResiliencePipeline,
-                Options.Create(builder.ProcessorOptions)
+                Options.Create(builder.ProcessorOptions),
+                sp.GetService<IOutboxMetrics>()
             ));
 
         return builder;
@@ -46,7 +48,7 @@ public static class OutboxExtensions
         string moduleName)
         where TDbContext : DbContext, IOutboxDbContext
     {
-        var builder = new OutboxBuilder(services, moduleName);
+        var builder = new OutboxBuilder(services, moduleName, isKeyed: true);
 
         services.AddKeyedScoped<IOutboxPublisher, OutboxPublisher<TDbContext>>(moduleName);
 
@@ -62,7 +64,8 @@ public static class OutboxExtensions
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 sp.GetRequiredService<ILogger<OutboxProcessorBackgroundService<TDbContext>>>(),
                 builder.ResiliencePipeline,
-                Options.Create(builder.ProcessorOptions)
+                Options.Create(builder.ProcessorOptions),
+                sp.GetKeyedService<IOutboxMetrics>(moduleName)
             ));
 
         return builder;

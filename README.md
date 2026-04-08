@@ -74,6 +74,40 @@ dotnet run --project src/Notification/Notification.Consumer
 
 The Orders API will be available at `http://localhost:5000` (or the port shown in the terminal output after startup).
 
+## Stress test with K6
+
+The file [tests/k6/outbox-stress-test.js](tests/k6/outbox-stress-test.js) runs a load test against the Orders API with the following stages:
+
+| Stage     | Duration | Virtual Users |
+| --------- | -------- | ------------- |
+| Ramp-up   | 30s      | 0 → 10        |
+| Sustained | 2m       | 50            |
+| Ramp-down | 30s      | 50 → 0        |
+
+**Thresholds:**
+
+- 95th percentile response time < 500ms
+- Error rate < 1%
+
+### Pre-requisites
+
+- [k6](https://k6.io/docs/get-started/installation/) installed
+- Orders API running (see [Running locally](#running-locally-without-docker))
+
+### Running the test
+
+```bash
+k6 run tests/k6/outbox-stress-test.js
+```
+
+To target a different API URL:
+
+```bash
+BASE_URL=http://localhost:5000 k6 run tests/k6/outbox-stress-test.js
+```
+
+---
+
 ## Testing the endpoint
 
 ### Using the `.http` file

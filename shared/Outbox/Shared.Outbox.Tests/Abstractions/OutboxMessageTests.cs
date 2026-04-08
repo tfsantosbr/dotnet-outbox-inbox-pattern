@@ -228,8 +228,8 @@ public class OutboxMessageTests
         laterMessage.MarkAsProcessedWithSuccess(); // Call twice to test the update
 
         // Assert
-        Assert.NotNull(laterMessage.ProcessedOn);
-        Assert.True(laterMessage.ProcessedOn >= firstProcessedOn);
+        Assert.NotNull(laterMessage.ProcessedOnUtc);
+        Assert.True(laterMessage.ProcessedOnUtc >= firstProcessedOn);
     }
 
     [Fact]

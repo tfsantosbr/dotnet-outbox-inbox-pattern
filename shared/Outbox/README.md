@@ -215,6 +215,93 @@ public interface IOutboxPublisher
 
 ---
 
+## Metrics
+
+The outbox exposes opt-in throughput metrics via `System.Diagnostics.Metrics` (BCL). No OpenTelemetry dependency is added to the outbox library — the consuming application decides which observability stack subscribes to the meter.
+
+### Enabling metrics
+
+Call `.WithMetrics()` on the outbox builder in `Program.cs`:
+
+```csharp
+builder.Services.AddOutbox<OrdersDbContext>("orders")
+    .UsePostgresStorage(...)
+    .WithSettings(...)
+    .WithMetrics();   // opt-in — module tag is included automatically
+```
+
+To add extra global tags applied to every measurement:
+
+```csharp
+.WithMetrics(o =>
+{
+    o.Tags = new Dictionary<string, string>
+    {
+        ["environment"] = "production"
+    };
+});
+```
+
+### Subscribing the meter (OpenTelemetry)
+
+Add the meter name to the OpenTelemetry metrics configuration in your service:
+
+```csharp
+using Shared.Outbox.Metrics;
+
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics => metrics
+        ...
+        .AddMeter(OutboxInstrumentation.MeterName));  // "Shared.Outbox"
+```
+
+### Available instruments
+
+| Instrument | Type | Description |
+| --- | --- | --- |
+| `outbox.messages.published` | Counter | Messages successfully published to the broker |
+| `outbox.messages.failed` | Counter | Messages that failed to publish |
+| `outbox.messages.processed` | Counter | Total messages processed (success + failure) |
+
+All instruments include a `module` tag with the value passed to `AddOutbox("module-name")`.
+
+### Grafana — useful queries
+
+#### Throughput (messages/second)
+
+```promql
+rate(outbox_messages_published_total[1m])
+```
+
+#### Error rate
+
+```promql
+rate(outbox_messages_failed_total[1m])
+  /
+rate(outbox_messages_processed_total[1m])
+```
+
+#### Total processed messages (cumulative)
+
+```promql
+outbox_messages_processed_total
+```
+
+#### Comparing success vs failure over time
+
+```promql
+rate(outbox_messages_published_total[5m])
+rate(outbox_messages_failed_total[5m])
+```
+
+**Filter by module** (when multiple modules are active in the same service):
+
+```promql
+rate(outbox_messages_published_total{module="orders"}[1m])
+```
+
+---
+
 ## Checklist
 
 - [ ] `DbContext` implements `IOutboxDbContext`

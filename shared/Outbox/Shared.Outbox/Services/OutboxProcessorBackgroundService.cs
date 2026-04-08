@@ -9,6 +9,7 @@ using Polly;
 using Shared.Messaging.Abstractions;
 using Shared.Outbox.Abstractions;
 using Shared.Outbox.Database;
+using Shared.Outbox.Metrics;
 using Shared.Outbox.Settings;
 
 namespace Shared.Outbox.Services;
@@ -19,7 +20,8 @@ internal sealed class OutboxProcessorBackgroundService<TContext>(
     IServiceScopeFactory scopeFactory,
     ILogger<OutboxProcessorBackgroundService<TContext>> logger,
     ResiliencePipeline resiliencePipeline,
-    IOptions<OutboxProcessorOptions> processorOptions
+    IOptions<OutboxProcessorOptions> processorOptions,
+    IOutboxMetrics? metrics = null
 ) : BackgroundService
     where TContext : DbContext, IOutboxDbContext
 {
@@ -78,6 +80,9 @@ internal sealed class OutboxProcessorBackgroundService<TContext>(
 
                     message.MarkAsProcessedWithSuccess();
 
+                    metrics?.RecordPublished();
+                    metrics?.RecordProcessed();
+
                     logger.LogInformation(
                         "Published message '{MessageType}' with id '{Id}' from '{Module}'",
                         message.GetTypeName(),
@@ -91,6 +96,9 @@ internal sealed class OutboxProcessorBackgroundService<TContext>(
         catch (Exception ex)
         {
             message.MarkAsProcessedWithError(ex.Message);
+
+            metrics?.RecordFailed();
+            metrics?.RecordProcessed();
 
             logger.LogError(
                 ex,
