@@ -3,6 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Notification.Consumer.Consumers;
 using Notification.Consumer.Infrastructure;
 
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+
 using Shared.Contracts.Events;
 using Shared.Messaging.Abstractions.Extensions;
 using Shared.Messaging.RabbitMQ.Extensions;
@@ -30,6 +35,26 @@ builder.Services.AddMessaging()
         config.Exchange = "order-total-amount-updated";
         config.Queue = "notification.order-total-amount-updated";
     });
+
+// Observability
+
+builder.Logging.AddOpenTelemetry(logging =>
+{
+    logging.IncludeFormattedMessage = true;
+    logging.IncludeScopes = true;
+    logging.AddOtlpExporter();
+});
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("notification-consumer"))
+    .WithTracing(tracing => tracing
+        .AddHttpClientInstrumentation()
+        .AddEntityFrameworkCoreInstrumentation()
+        .AddOtlpExporter())
+    .WithMetrics(metrics => metrics
+        .AddHttpClientInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddOtlpExporter());
 
 var host = builder.Build();
 host.Run();

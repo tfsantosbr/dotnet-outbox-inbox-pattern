@@ -46,6 +46,9 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
       ConnectionStrings__RabbitMQ: "amqp://guest:guest@rabbitmq:5672/"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "orders-api"
     ports:
       - "8080:8080"
     depends_on:
@@ -53,6 +56,9 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    networks:
+      - default
+      - observability
     restart: unless-stopped
 
   notification-consumer:
@@ -64,9 +70,15 @@ services:
       DOTNET_ENVIRONMENT: Production
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
       ConnectionStrings__RabbitMQ: "amqp://guest:guest@rabbitmq:5672/"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "notification-consumer"
     depends_on:
       rabbitmq:
         condition: service_healthy
+    networks:
+      - default
+      - observability
     restart: unless-stopped
 
   inventory-consumer:
@@ -78,10 +90,21 @@ services:
       DOTNET_ENVIRONMENT: Production
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
       ConnectionStrings__RabbitMQ: "amqp://guest:guest@rabbitmq:5672/"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "inventory-consumer"
     depends_on:
       rabbitmq:
         condition: service_healthy
+    networks:
+      - default
+      - observability
     restart: unless-stopped
+
+networks:
+  observability:
+    external: true
+    name: observability-grafana-stack_observability
 
 volumes:
   postgres-data:

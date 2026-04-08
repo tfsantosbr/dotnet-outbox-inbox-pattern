@@ -1,4 +1,5 @@
-@baseUrl = http://localhost:5176
+#@baseUrl = http://localhost:5176
+@baseUrl = http://localhost:8080
 @orderId = {{createOrder.response.body.$.id}}
 
 ### Create Order
