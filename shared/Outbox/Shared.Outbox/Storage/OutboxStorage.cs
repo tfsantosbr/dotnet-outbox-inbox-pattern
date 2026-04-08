@@ -74,7 +74,10 @@ public class OutboxStorage(
         await _transaction!.CommitAsync(cancellationToken);
 
         await _transaction.DisposeAsync();
+        _transaction = null;
+
         await _connection!.DisposeAsync();
+        _connection = null;
     }
 
     public async ValueTask DisposeAsync()
