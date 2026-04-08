@@ -62,7 +62,7 @@ public sealed class OutboxBuilder(IServiceCollection services, string moduleName
             foreach (var (key, value) in additionalTags)
                 tags[key] = value;
 
-        tags["module"] = ModuleName;
+        tags[OutboxInstrumentation.ModuleTagKey] = ModuleName;
         
         return tags;
     }
