@@ -1,32 +1,221 @@
 # Messaging
 
-Message bus abstraction for RabbitMQ. Used by Outbox and Inbox for publishing and consuming integration events.
+Message bus abstraction and RabbitMQ implementation for publishing and consuming integration events. Used by the Outbox background processor and by consumers in other modules.
 
 ## Architecture
 
-- **Shared.Messaging.Abstractions**: `IMessageBus` interface
-- **Shared.Messaging**: RabbitMQ implementation, `IMessageBusConnectionFactory`
+| Project | Responsibility |
+| --- | --- |
+| `Shared.Messaging.Abstractions` | `IMessageBus`, `IMessageConsumer<T>`, `IMessageContext`, `MessageHeaders` |
+| `Shared.Messaging.RabbitMQ` | RabbitMQ implementation, connection management, consumer worker |
 
-## Main Abstractions
+---
+
+## Core Abstractions
+
+### `IMessageBus`
 
 ```csharp
 public interface IMessageBus
 {
-    Task PublishAsync<T>(T message, CancellationToken cancellationToken = default) where T : class;
-}
+    // Publish a strongly-typed event (destination resolved from topology registry)
+    Task PublishAsync<TMessage>(
+        TMessage message,
+        IDictionary<string, string>? headers = null,
+        CancellationToken cancellationToken = default)
+        where TMessage : IEventBase;
 
-public interface IMessageBusConnectionFactory
-{
-    // Connection management for RabbitMQ
+    // Publish a raw JSON payload to an explicit destination
+    Task PublishAsync(
+        string message,
+        string destination,
+        IDictionary<string, string>? headers = null,
+        CancellationToken cancellationToken = default);
 }
 ```
 
-## Usage Example
-
-Typically not used directly by application code. Outbox background service and Inbox consumers use it. For direct publishing (outside Outbox):
+### `IMessageConsumer<TMessage>`
 
 ```csharp
-await _messageBus.PublishAsync(integrationEvent, cancellationToken);
+public interface IMessageConsumer<in TMessage>
+{
+    Task ConsumeAsync(TMessage message, IMessageContext context, CancellationToken cancellationToken = default);
+}
 ```
 
-Prefer Outbox for transactional consistency with database writes.
+### `IMessageContext`
+
+Provides delivery metadata and manual acknowledgment control:
+
+```csharp
+public interface IMessageContext
+{
+    IReadOnlyDictionary<string, string> Headers { get; }
+    string? MessageId { get; }
+    bool Redelivered { get; }
+
+    Task AckAsync(bool multiple = false, CancellationToken cancellationToken = default);
+    Task NackAsync(bool multiple = false, bool requeue = true, CancellationToken cancellationToken = default);
+}
+```
+
+### `MessageHeaders`
+
+Standard header keys used across all messages:
+
+```csharp
+public static class MessageHeaders
+{
+    public const string MessageId     = "message-id";
+    public const string OccurredOnUtc = "occurred-on-utc";
+    public const string CorrelationId = "correlation-id";
+    public const string CausationId   = "causation-id";
+    public const string Source        = "source";
+}
+```
+
+The RabbitMQ implementation enforces the presence of `message-id` and `occurred-on-utc` at publish time.
+
+---
+
+## Configuration
+
+### Options
+
+**`RabbitMqOptions`** — connection settings:
+
+```csharp
+public sealed class RabbitMqOptions
+{
+    public string ConnectionString { get; set; }  // e.g. "amqp://guest:guest@localhost:5672"
+}
+```
+
+**`RabbitMqPublishOptions`** — publish topology per message type:
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `Destination` | `string` | — | Exchange name on RabbitMQ |
+| `RoutingKey` | `string` | `""` | Routing key (used by Direct/Topic exchanges) |
+| `ExchangeType` | `RabbitMqExchangeType` | `Fanout` | `Fanout`, `Direct`, `Topic`, `Headers` |
+| `Durable` | `bool` | `false` | Whether the exchange survives broker restart |
+
+**`RabbitMqConsumerOptions`** — consumer topology:
+
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `Exchange` | `string` | `""` | Exchange to bind to |
+| `Queue` | `string` | `""` | Queue name to consume from |
+| `RoutingKey` | `string` | `""` | Binding routing key |
+| `ExchangeType` | `RabbitMqExchangeType` | `Fanout` | Exchange type |
+| `Durable` | `bool` | `false` | Durable queue |
+| `Exclusive` | `bool` | `false` | Exclusive queue |
+| `AutoDelete` | `bool` | `false` | Delete queue when no consumers |
+| `AckMode` | `AckMode` | `Manual` | `Manual` or `AutoOnSuccess` |
+
+---
+
+## Setup
+
+Call `AddMessaging()` in `Program.cs`, then chain `UseRabbitMq`, `AddPublishOptions`, and `AddConsumer`:
+
+```csharp
+using Shared.Messaging.Abstractions;
+using Shared.Messaging.RabbitMQ.Extensions;
+using Shared.Messaging.RabbitMQ.Options;
+
+builder.Services
+    .AddMessaging()
+    .UseRabbitMq(o =>
+    {
+        o.ConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")!;
+    })
+    // Register the publish topology for each outbound message type
+    .AddPublishOptions<OrderCreatedIntegrationEvent>(o =>
+    {
+        o.Destination   = "orders-created";
+        o.ExchangeType  = RabbitMqExchangeType.Fanout;
+        o.Durable       = true;
+    })
+    // Register a consumer (creates a BackgroundService worker automatically)
+    .AddConsumer<OrderCreatedConsumer, OrderCreatedIntegrationEvent>(o =>
+    {
+        o.Exchange     = "orders-created";
+        o.Queue        = "inventory.orders";
+        o.ExchangeType = RabbitMqExchangeType.Fanout;
+        o.Durable      = true;
+        o.AckMode      = AckMode.AutoOnSuccess;
+    });
+```
+
+### `AddPublishOptions<TMessage>`
+
+Registers the routing topology for a message type in `IPublishTopologyRegistry`. Required when using the strongly-typed `IMessageBus.PublishAsync<TMessage>` overload (including via the Outbox processor).
+
+### `AddConsumer<TConsumer, TMessage>`
+
+Registers `TConsumer` as a scoped service and starts a `RabbitMqConsumerWorker<TMessage, TConsumer>` background service that declares the exchange/queue, binds them, and dispatches messages to `TConsumer.ConsumeAsync`.
+
+---
+
+## Publishing
+
+> Prefer the **Outbox** library for any publish that must be atomic with a database write. Use direct publishing only for fire-and-forget scenarios where exactly-once guarantees are not required.
+
+```csharp
+public class SomeService(IMessageBus messageBus)
+{
+    public async Task DoWorkAsync(CancellationToken ct)
+    {
+        var @event = new OrderCreatedIntegrationEvent(...);
+
+        var headers = new Dictionary<string, string>
+        {
+            [MessageHeaders.CorrelationId] = correlationId,
+            [MessageHeaders.CausationId]   = causationId,
+            [MessageHeaders.Source]        = "orders-api",
+        };
+
+        await messageBus.PublishAsync(@event, headers, ct);
+    }
+}
+```
+
+---
+
+## Consuming
+
+Implement `IMessageConsumer<TMessage>` and register it with `AddConsumer`:
+
+```csharp
+public class OrderCreatedConsumer(ILogger<OrderCreatedConsumer> logger)
+    : IMessageConsumer<OrderCreatedIntegrationEvent>
+{
+    public async Task ConsumeAsync(
+        OrderCreatedIntegrationEvent message,
+        IMessageContext context,
+        CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation("Order received: {OrderId}", message.OrderId);
+
+        // ... process message ...
+
+        // With AckMode.Manual, acknowledge explicitly:
+        await context.AckAsync(cancellationToken: cancellationToken);
+    }
+}
+```
+
+With `AckMode.AutoOnSuccess`, the worker calls `AckAsync` automatically when `ConsumeAsync` completes without throwing. On exception, it calls `NackAsync` with `requeue: true`.
+
+---
+
+## Registered Services
+
+| Service | Lifetime | Notes |
+| --- | --- | --- |
+| `IMessageBus` | Singleton | `RabbitMqMessageBus` |
+| `IPersistentRabbitMqConnection` | Singleton | Shared connection with lazy init |
+| `IPublishTopologyRegistry` | Singleton | Maps message types to `PublishOptions` |
+| `TConsumer` | Scoped | One scope per message delivery |
+| `RabbitMqConsumerWorker<T,C>` | Hosted | One worker per `AddConsumer` call |

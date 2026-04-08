@@ -23,8 +23,8 @@ Command Handler
 
 | Project | Responsibility |
 | --- | --- |
-| `Shared.Outbox.Abstractions` | `IOutboxPublisher`, `OutboxMessage` |
-| `Shared.Outbox` | EF Core config, publisher implementation, background processor, storage |
+| `Shared.Outbox.Abstractions` | `IOutboxPublisher`, `IOutboxStorage`, `IOutboxDbContext`, `OutboxMessage` |
+| `Shared.Outbox` | EF Core config, publisher implementation, background processor, storage, metrics |
 
 ---
 
@@ -67,7 +67,7 @@ public interface IOutboxDbContext
 }
 ```
 
-`OutboxMessageEntityConfig` maps the entity to a PostgreSQL table with `jsonb` columns for `Headers` and `Content`, and indexes on `OccurredOn`, `ProcessedOn`, and `ErrorHandledOn`.
+`OutboxMessageEntityConfig` maps the entity to a PostgreSQL table with `jsonb` columns for `Headers` and `Content`, and indexes on `OccurredOnUtc`, `ProcessedOnUtc`, and `ErrorHandledOnUtc`.
 
 ---
 
@@ -90,115 +90,157 @@ The migration will create a table with the following columns:
 | `Destination` | `text` | Target queue / exchange name |
 | `Content` | `jsonb` | Serialized event payload |
 | `Headers` | `jsonb` | Optional headers (e.g. correlation IDs) |
-| `OccurredOn` | `timestamp` | When the event was created |
-| `ProcessedOn` | `timestamp?` | When it was published (null = pending) |
-| `ErrorHandledOn` | `timestamp?` | When the last error occurred |
+| `OccurredOnUtc` | `timestamp` | When the event was created |
+| `ProcessedOnUtc` | `timestamp?` | When it was published (`null` = pending) |
+| `ErrorHandledOnUtc` | `timestamp?` | When the last error occurred |
 | `Error` | `text?` | Last error message |
 
 ---
 
-### 3. Register the Outbox Services (`AddOutboxServices`)
+### 3. Register the Outbox Services
 
-In `Program.cs`, call `AddOutboxServices<TDbContext>` **after** registering the messaging infrastructure:
+In `Program.cs`, call `AddOutbox<TDbContext>` (or `AddKeyedOutbox<TDbContext>`) **after** registering the messaging infrastructure. The method returns an `OutboxBuilder` for fluent configuration.
+
+#### Non-keyed (single outbox per service)
+
+Use when the service has a single database context and a single outbox.
 
 ```csharp
 using Shared.Outbox.Extensions;
 
 // Messaging must be registered first
-builder.Services.AddMessaging().UseRabbitMq(options =>
-    options.ConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")!);
+builder.Services
+    .AddMessaging()
+    .UseRabbitMq(o => o.ConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")!)
+    .AddPublishOptions<OrderCreatedIntegrationEvent>(o =>
+    {
+        o.Destination  = "orders";
+        o.ExchangeType = RabbitMqExchangeType.Fanout;
+        o.Durable      = true;
+    });
 
 // Outbox
-builder.Services.AddOutboxServices<OrdersDbContext>(
-    moduleName: "orders",
-    connectionString: builder.Configuration.GetConnectionString("Database")!,
-    intervalInSeconds: 10,
-    messagesBatchSize: 30,
-    tableName: "outbox_messages"   // must match OutboxMessageEntityConfig table name
-);
+builder.Services.AddOutbox<OrdersDbContext>()
+    .UsePostgresStorage(o =>
+    {
+        o.ConnectionString = builder.Configuration.GetConnectionString("Database")!;
+        o.Schema           = "orders";    // default: "public"
+        o.TableName        = "outbox_messages";  // must match OutboxMessageEntityConfig
+    })
+    .WithSettings(o =>
+    {
+        o.IntervalInSeconds = 10;  // default: 10
+        o.BatchSize         = 30;  // default: 30
+    });
 ```
 
-#### Parameters
+`IOutboxPublisher` is registered as a **plain scoped service** and can be injected directly.
 
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `moduleName` | `string` | Unique name for this module. Used as the DB schema and as the **keyed service key** for `IOutboxPublisher`. |
-| `connectionString` | `string` | PostgreSQL connection string. Used directly by Dapper in the background processor (bypasses EF Core). |
-| `intervalInSeconds` | `int` | How often the background processor polls for unprocessed messages. |
-| `messagesBatchSize` | `int` | Maximum number of messages processed per poll cycle. |
-| `tableName` | `string` | Name of the outbox table. Must match what was passed to `OutboxMessageEntityConfig`. Defaults to `"OutboxMessages"`. |
+#### Keyed (multiple outboxes in the same service)
+
+Use when a single host runs multiple modules, each with its own `DbContext`.
+
+```csharp
+builder.Services.AddKeyedOutbox<OrdersDbContext>("orders")
+    .UsePostgresStorage(o => { ... })
+    .WithSettings(o => { ... });
+
+builder.Services.AddKeyedOutbox<InventoryDbContext>("inventory")
+    .UsePostgresStorage(o => { ... })
+    .WithSettings(o => { ... });
+```
+
+`IOutboxPublisher` is registered as a **keyed scoped service** under `moduleName`. Inject it using `[FromKeyedServices("moduleName")]`.
+
+#### `OutboxBuilder` options
+
+| Method | Description |
+| --- | --- |
+| `.UsePostgresStorage(configure)` | Sets `ConnectionString`, `Schema`, and `TableName` |
+| `.WithSettings(configure)` | Sets `IntervalInSeconds` and `BatchSize` |
+| `.WithResilience(pipeline)` | Replaces the default Polly retry policy |
+| `.WithMetrics(configure?)` | Opt-in throughput metrics (see [Metrics](#metrics)) |
 
 #### What Gets Registered
 
-- **`IOutboxPublisher`** — registered as a **keyed scoped service** under `moduleName`. Inject it using `[FromKeyedServices("moduleName")]`.
-- **`OutboxProcessorBackgroundService`** — a `BackgroundService` that polls the outbox table, publishes messages to RabbitMQ via `IMessageBus`, and marks them as processed. Includes an exponential back-off retry policy (up to 5 attempts with jitter via Polly).
+| Service | Lifetime | Notes |
+| --- | --- | --- |
+| `IOutboxPublisher` | Scoped | Stages messages in the EF Core change tracker |
+| `IOutboxStorage` | Transient | Dapper-based read/update via direct connection |
+| `OutboxProcessorBackgroundService` | Hosted | Polls and publishes pending messages |
 
 ---
 
 ### 4. Publish Events via `IOutboxPublisher`
 
-Inject `IOutboxPublisher` using the keyed service attribute matching the `moduleName` used in registration:
+#### Non-keyed injection
 
 ```csharp
-using Shared.Outbox.Abstractions;
-
 public class CreateOrderCommandHandler(
     OrdersDbContext dbContext,
-    [FromKeyedServices("orders")] IOutboxPublisher outboxPublisher)
+    IOutboxPublisher outboxPublisher)
 {
-    public async Task<Guid> HandleAsync(CreateOrderCommand command, string correlationId)
+    public async Task<Guid> HandleAsync(CreateOrderCommand command, CancellationToken ct)
     {
-        var order = new Order(
-            Guid.CreateVersion7(),
-            command.CustomerId,
-            DateTime.UtcNow,
-            command.TotalAmount);
-
+        var order = new Order(Guid.CreateVersion7(), command.CustomerId, DateTime.UtcNow, command.TotalAmount);
         dbContext.Orders.Add(order);
 
         var @event = new OrderCreatedIntegrationEvent(
-            orderId: order.Id,
-            customerId: order.CustomerId,
-            totalAmount: order.TotalAmount,
-            occurredOnUtc: order.CreatedOnUtc,
-            correlationId: correlationId,
-            causationId: order.Id.ToString(),
-            source: "Orders.API");
+            orderId:       order.Id,
+            customerId:    order.CustomerId,
+            totalAmount:   order.TotalAmount,
+            occurredOnUtc: order.CreatedOnUtc);
 
-        // Optional: propagate headers (e.g. correlation ID for distributed tracing)
-        var headers = new Dictionary<string, string> { { "X-Correlation-Id", correlationId } };
+        var headers = new Dictionary<string, string>
+        {
+            [MessageHeaders.CorrelationId] = correlationId,
+            [MessageHeaders.CausationId]   = order.Id.ToString(),
+            [MessageHeaders.Source]        = "Orders.API",
+        };
 
         // Stages the event — does NOT publish to RabbitMQ yet
-        await outboxPublisher.Publish(@event, "order-created", headers);
+        await outboxPublisher.PublishAsync(@event, headers, ct);
 
         // Saves both the Order and the OutboxMessage in a single transaction
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(ct);
 
         return order.Id;
     }
 }
 ```
 
-`IOutboxPublisher.Publish` only adds the `OutboxMessage` row to the EF Core change tracker. The actual publish to the broker happens **after** `SaveChangesAsync` completes, when `OutboxProcessorBackgroundService` picks it up.
+#### Keyed injection
+
+```csharp
+public class CreateOrderCommandHandler(
+    OrdersDbContext dbContext,
+    [FromKeyedServices("orders")] IOutboxPublisher outboxPublisher)
+{
+    // same as above
+}
+```
 
 #### `IOutboxPublisher` signature
 
 ```csharp
 public interface IOutboxPublisher
 {
-    Task Publish<TEvent>(
+    Task PublishAsync<TEvent>(
         TEvent integrationEvent,
-        string destination,
-        IDictionary<string, string>? headers = null
-    ) where TEvent : IEventBase;
+        IDictionary<string, string>? headers = null,
+        CancellationToken cancellationToken = default)
+        where TEvent : IEventBase;
 }
 ```
 
 | Parameter | Description |
 | --- | --- |
 | `integrationEvent` | The event to publish. Must implement `IEventBase`. |
-| `destination` | Queue or exchange name on RabbitMQ. |
-| `headers` | Optional metadata (correlation IDs, tracing, etc.). Stored as `jsonb` and forwarded to the broker. |
+| `headers` | Optional metadata forwarded to the broker as `jsonb`. |
+
+> The destination exchange is resolved automatically from `IPublishTopologyRegistry` based on the event type. Register it with `.AddPublishOptions<TEvent>` on the messaging builder.
+
+`PublishAsync` only adds the `OutboxMessage` row to the EF Core change tracker. The actual publish to the broker happens **after** `SaveChangesAsync` completes, when the background processor picks it up.
 
 ---
 
@@ -207,11 +249,28 @@ public interface IOutboxPublisher
 `OutboxProcessorBackgroundService` runs in a loop:
 
 1. Opens a PostgreSQL connection and begins a transaction.
-2. Selects up to `messagesBatchSize` unprocessed rows (`ProcessedOn IS NULL`), ordered by `OccurredOn`, using `FOR UPDATE` to prevent concurrent processing.
-3. For each message, calls `IMessageBus.Publish` with the serialized payload, destination, and headers.
-4. On success — sets `ProcessedOn = UTC now`, clears `Error` and `ErrorHandledOn`.
-5. On failure — sets `ProcessedOn = UTC now`, `ErrorHandledOn = UTC now`, and stores the exception message in `Error`. Retries up to **5 times** with exponential back-off and jitter (Polly).
-6. Commits the transaction and waits `intervalInSeconds` before the next cycle.
+2. Selects up to `BatchSize` rows where `ProcessedOnUtc IS NULL`, ordered by `OccurredOnUtc`, using `FOR UPDATE` to prevent concurrent processing.
+3. For each message, calls `IMessageBus.PublishAsync` with the serialized payload, destination, and headers.
+4. On **success** — sets `ProcessedOnUtc = UTC now`, clears `Error` and `ErrorHandledOnUtc`.
+5. On **failure** — sets `ProcessedOnUtc = UTC now`, `ErrorHandledOnUtc = UTC now`, stores the exception message in `Error`. Retries up to **5 times** with exponential back-off and jitter (Polly).
+6. Commits the transaction and waits `IntervalInSeconds` before the next cycle.
+
+### Custom resilience policy
+
+Replace the default Polly retry with your own pipeline:
+
+```csharp
+using Polly;
+
+var pipeline = new ResiliencePipelineBuilder()
+    .AddRetry(new RetryStrategyOptions { MaxRetryAttempts = 3 })
+    .AddTimeout(TimeSpan.FromSeconds(5))
+    .Build();
+
+builder.Services.AddOutbox<OrdersDbContext>()
+    .UsePostgresStorage(...)
+    .WithResilience(pipeline);
+```
 
 ---
 
@@ -224,10 +283,10 @@ The outbox exposes opt-in throughput metrics via `System.Diagnostics.Metrics` (B
 Call `.WithMetrics()` on the outbox builder in `Program.cs`:
 
 ```csharp
-builder.Services.AddOutbox<OrdersDbContext>("orders")
+builder.Services.AddOutbox<OrdersDbContext>()
     .UsePostgresStorage(...)
     .WithSettings(...)
-    .WithMetrics();   // opt-in — module tag is included automatically
+    .WithMetrics();
 ```
 
 To add extra global tags applied to every measurement:
@@ -251,7 +310,6 @@ using Shared.Outbox.Metrics;
 
 builder.Services.AddOpenTelemetry()
     .WithMetrics(metrics => metrics
-        ...
         .AddMeter(OutboxInstrumentation.MeterName));  // "Shared.Outbox"
 ```
 
@@ -263,7 +321,7 @@ builder.Services.AddOpenTelemetry()
 | `outbox.messages.failed` | Counter | Messages that failed to publish |
 | `outbox.messages.processed` | Counter | Total messages processed (success + failure) |
 
-All instruments include a `module` tag with the value passed to `AddOutbox("module-name")`.
+All instruments include a `module` tag with the value passed to `AddKeyedOutbox("module-name")` when using the keyed variant.
 
 ### Grafana — useful queries
 
@@ -308,7 +366,9 @@ rate(outbox_messages_published_total{module="orders"}[1m])
 - [ ] `DbSet<OutboxMessage> OutboxMessages` declared on the `DbContext`
 - [ ] `OutboxMessageEntityConfig` applied in `OnModelCreating` with the correct table name
 - [ ] Migration generated and applied
-- [ ] `AddMessaging().UseRabbitMq(...)` registered before `AddOutboxServices`
-- [ ] `AddOutboxServices<TDbContext>` called with `moduleName`, connection string, interval, batch size, and table name
-- [ ] `IOutboxPublisher` injected with `[FromKeyedServices("moduleName")]`
-- [ ] `outboxPublisher.Publish(...)` called **before** `SaveChangesAsync`
+- [ ] `AddMessaging().UseRabbitMq(...)` registered before `AddOutbox`
+- [ ] `.AddPublishOptions<TEvent>` registered for each event type published via the outbox
+- [ ] `AddOutbox<TDbContext>()` (or `AddKeyedOutbox<TDbContext>("moduleName")` for multi-module) called
+- [ ] `.UsePostgresStorage(...)` configured with connection string, schema, and table name
+- [ ] `IOutboxPublisher` injected directly (non-keyed) or with `[FromKeyedServices("moduleName")]` (keyed)
+- [ ] `outboxPublisher.PublishAsync(...)` called **before** `SaveChangesAsync`

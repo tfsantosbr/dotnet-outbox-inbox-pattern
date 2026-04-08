@@ -10,9 +10,9 @@ using Shared.Outbox.Settings;
 
 namespace Shared.Outbox;
 
-public sealed class OutboxBuilder(IServiceCollection services, string moduleName, bool isKeyed = false)
+public sealed class OutboxBuilder(IServiceCollection services, string? moduleName, bool isKeyed = false)
 {
-    internal readonly string ModuleName = moduleName;
+    internal readonly string? ModuleName = moduleName;
     internal OutboxStorageOptions StorageOptions { get; private set; } = new();
     internal OutboxProcessorOptions ProcessorOptions { get; private set; } = new();
     internal ResiliencePipeline ResiliencePipeline { get; private set; } = OutboxResilience.CreateDefault();
@@ -62,7 +62,8 @@ public sealed class OutboxBuilder(IServiceCollection services, string moduleName
             foreach (var (key, value) in additionalTags)
                 tags[key] = value;
 
-        tags[OutboxInstrumentation.ModuleTagKey] = ModuleName;
+        if (ModuleName is not null)
+            tags[OutboxInstrumentation.ModuleTagKey] = ModuleName;
         
         return tags;
     }

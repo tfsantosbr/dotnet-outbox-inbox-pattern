@@ -8,7 +8,6 @@ using Shared.Outbox.Database;
 using Shared.Outbox.Metrics;
 using Shared.Outbox.Publisher;
 using Shared.Outbox.Services;
-using Shared.Outbox.Settings;
 using Shared.Outbox.Storage;
 
 namespace Shared.Outbox.Extensions;
@@ -16,11 +15,10 @@ namespace Shared.Outbox.Extensions;
 public static class OutboxExtensions
 {
     public static OutboxBuilder AddOutbox<TDbContext>(
-        this IServiceCollection services,
-        string moduleName)
+        this IServiceCollection services)
         where TDbContext : DbContext, IOutboxDbContext
     {
-        var builder = new OutboxBuilder(services, moduleName);
+        var builder = new OutboxBuilder(services, null);
 
         services.AddScoped<IOutboxPublisher, OutboxPublisher<TDbContext>>();
 
@@ -31,7 +29,7 @@ public static class OutboxExtensions
 
         services.AddHostedService(sp =>
             new OutboxProcessor<TDbContext>(
-                moduleName,
+                null,
                 storageKey: null,
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 sp.GetRequiredService<ILogger<OutboxProcessor<TDbContext>>>(),

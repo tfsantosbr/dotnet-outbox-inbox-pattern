@@ -47,10 +47,9 @@ public class OutboxExtensionsTests
     {
         // Arrange
         var services = CreateBaseServices();
-        const string moduleName = "orders";
 
         // Act
-        services.AddOutbox<TestDbContext>(moduleName)
+        services.AddOutbox<TestDbContext>()
             .UsePostgresStorage(o => o.ConnectionString = "Host=localhost")
             .WithSettings(o => { o.IntervalInSeconds = 5; o.BatchSize = 10; });
 
@@ -89,10 +88,9 @@ public class OutboxExtensionsTests
     {
         // Arrange
         var services = CreateBaseServices();
-        const string moduleName = "orders";
 
         // Act
-        services.AddOutbox<TestDbContext>(moduleName)
+        services.AddOutbox<TestDbContext>()
             .UsePostgresStorage(o => o.ConnectionString = "Host=localhost");
 
         // Assert
@@ -131,7 +129,7 @@ public class OutboxExtensionsTests
         var services = CreateBaseServices();
 
         // Act
-        services.AddOutbox<TestDbContext>("orders")
+        services.AddOutbox<TestDbContext>()
             .UsePostgresStorage(o => o.ConnectionString = "Host=localhost");
 
         // Assert
@@ -148,7 +146,7 @@ public class OutboxExtensionsTests
         var services = CreateBaseServices();
 
         // Act
-        var builder = services.AddOutbox<TestDbContext>("orders");
+        var builder = services.AddOutbox<TestDbContext>();
 
         // Assert
         Assert.NotNull(builder);
@@ -160,7 +158,7 @@ public class OutboxExtensionsTests
     {
         // Arrange
         var services = CreateBaseServices();
-        services.AddOutbox<TestDbContext>("orders")
+        services.AddOutbox<TestDbContext>()
             .UsePostgresStorage(o => o.ConnectionString = "Host=localhost");
 
         // Act

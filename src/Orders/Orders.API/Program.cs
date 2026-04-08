@@ -43,7 +43,7 @@ builder.Services
 
 // Outbox
 
-builder.Services.AddOutbox<OrdersDbContext>("orders")
+builder.Services.AddOutbox<OrdersDbContext>()
     .UsePostgresStorage(o =>
     {
         o.ConnectionString = configuration.GetConnectionString("Database")!;

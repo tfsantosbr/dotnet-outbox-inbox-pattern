@@ -15,7 +15,7 @@ using Shared.Outbox.Settings;
 namespace Shared.Outbox.Services;
 
 internal sealed class OutboxProcessor<TContext>(
-    string moduleName,
+    string? moduleName,
     string? storageKey,
     IServiceScopeFactory scopeFactory,
     ILogger<OutboxProcessor<TContext>> logger,
@@ -83,12 +83,7 @@ internal sealed class OutboxProcessor<TContext>(
                     metrics?.RecordPublished();
                     metrics?.RecordProcessed();
 
-                    logger.LogInformation(
-                        "Published message '{MessageType}' with id '{Id}' from '{Module}'",
-                        message.GetTypeName(),
-                        message.Id,
-                        moduleName
-                    );
+                    LogPublished(message);
                 },
                 stoppingToken
             );
@@ -100,14 +95,40 @@ internal sealed class OutboxProcessor<TContext>(
             metrics?.RecordFailed();
             metrics?.RecordProcessed();
 
+            LogFailed(ex, message);
+        }
+    }
+
+    private void LogPublished(OutboxMessage message)
+    {
+        if (moduleName is null)
+            logger.LogInformation(
+                "Published message '{MessageType}' with id '{Id}'",
+                message.GetTypeName(),
+                message.Id);
+        else
+            logger.LogInformation(
+                "Published message '{MessageType}' with id '{Id}' from '{Module}'",
+                message.GetTypeName(),
+                message.Id,
+                moduleName);
+    }
+
+    private void LogFailed(Exception ex, OutboxMessage message)
+    {
+        if (moduleName is null)
+            logger.LogError(
+                ex,
+                "Failed to publish message '{MessageType}' with id '{Id}'",
+                message.GetTypeName(),
+                message.Id);
+        else
             logger.LogError(
                 ex,
                 "Failed to publish message '{MessageType}' with id '{Id}' from '{Module}'",
                 message.GetTypeName(),
                 message.Id,
-                moduleName
-            );
-        }
+                moduleName);
     }
 
     private static Dictionary<string, string> SetRequiredHeader(
