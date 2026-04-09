@@ -61,8 +61,7 @@ internal sealed class OutboxProcessor<TContext>(
         OutboxMessage message,
         Dictionary<string, string>? headers,
         IMessageBus messageBus,
-        CancellationToken stoppingToken
-    )
+        CancellationToken stoppingToken)
     {
         try
         {
@@ -87,6 +86,11 @@ internal sealed class OutboxProcessor<TContext>(
                 },
                 stoppingToken
             );
+        }
+        catch (OperationCanceledException)
+        {
+            OutboxProcessorLogger.LogCancelled(logger, moduleName);
+            throw;
         }
         catch (Exception ex)
         {

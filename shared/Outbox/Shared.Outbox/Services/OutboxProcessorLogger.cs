@@ -21,6 +21,14 @@ internal static class OutboxProcessorLogger
                 moduleName);
     }
 
+    public static void LogCancelled<T>(ILogger<T> logger, string? moduleName)
+    {
+        if (moduleName is null)
+            logger.LogInformation("Outbox processing was cancelled");
+        else
+            logger.LogInformation("Outbox processing was cancelled for module '{Module}'", moduleName);
+    }
+
     public static void LogFailed<T>(ILogger<T> logger, string? moduleName, Exception ex, OutboxMessage message)
     {
         if (moduleName is null)
