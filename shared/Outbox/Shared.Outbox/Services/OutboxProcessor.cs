@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -31,61 +33,55 @@ internal sealed class OutboxProcessor<TContext>(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            await using var scope = scopeFactory.CreateAsyncScope();
-            var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-            var outboxStorage = storageKey is null
-                ? scope.ServiceProvider.GetRequiredService<IOutboxStorage>()
-                : scope.ServiceProvider.GetRequiredKeyedService<IOutboxStorage>(storageKey);
-
-            var messages = await outboxStorage.GetMessagesAsync(stoppingToken);
-
-            foreach (var message in messages)
+            var parallelOptions = new ParallelOptions
             {
-                var headers = message.GetHeaders();
+                MaxDegreeOfParallelism = _processor.MaxParallelism,
+                CancellationToken = stoppingToken
+            };
 
-                using (logger.BeginScope(headers ?? []))
-                {
-                    await ProcessMessage(message, headers, messageBus, stoppingToken);
-
-                    await outboxStorage.UpdateMessageAsync(message, stoppingToken);
-                }
-            }
-
-            await outboxStorage.CommitAsync(stoppingToken);
+            await Parallel.ForEachAsync(
+                Enumerable.Range(0, _processor.MaxParallelism),
+                parallelOptions,
+                async (_, token) => await ProcessMessages(token));
 
             await Task.Delay(TimeSpan.FromSeconds(_processor.IntervalInSeconds), stoppingToken);
         }
     }
 
-    private async Task ProcessMessage(
-        OutboxMessage message,
-        Dictionary<string, string>? headers,
-        IMessageBus messageBus,
-        CancellationToken stoppingToken)
+    private async Task ProcessMessages(CancellationToken stoppingToken)
     {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
+        var outboxStorage = storageKey is null
+            ? scope.ServiceProvider.GetRequiredService<IOutboxStorage>()
+            : scope.ServiceProvider.GetRequiredKeyedService<IOutboxStorage>(storageKey);
+
+        var cycleStopwatch = Stopwatch.StartNew();
+
+        var messages = await outboxStorage.GetMessagesAsync(stoppingToken);
+
+        if (messages.Count == 0) return;
+
+        metrics?.RecordBatchSize(messages.Count);
+
+        var batchItems = messages
+            .Select(m => new MessageBatchItem(m.Content, m.Destination, SetRequiredHeader(m, m.GetHeaders())))
+            .ToList();
+
+        var publishStopwatch = Stopwatch.StartNew();
         try
         {
             await resiliencePipeline.ExecuteAsync(
-                async cancelationToken =>
-                {
-                    var mergedHeaders = SetRequiredHeader(message, headers);
+                async ct => await messageBus.PublishBatchAsync(batchItems, ct),
+                stoppingToken);
 
-                    await messageBus.PublishAsync(
-                        message.Content,
-                        message.Destination,
-                        mergedHeaders,
-                        cancelationToken
-                    );
-
-                    message.MarkAsProcessedWithSuccess();
-
-                    metrics?.RecordPublished();
-                    metrics?.RecordProcessed();
-
-                    OutboxProcessorLogger.LogPublished(logger, moduleName, message);
-                },
-                stoppingToken
-            );
+            foreach (var m in messages)
+            {
+                m.MarkAsProcessedWithSuccess();
+                metrics?.RecordPublished();
+                metrics?.RecordProcessed();
+                OutboxProcessorLogger.LogPublished(logger, moduleName, m);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -94,13 +90,23 @@ internal sealed class OutboxProcessor<TContext>(
         }
         catch (Exception ex)
         {
-            message.MarkAsProcessedWithError(ex.Message);
+            foreach (var m in messages)
+            {
+                m.MarkAsProcessedWithError(ex.Message);
+                metrics?.RecordFailed();
+                metrics?.RecordProcessed();
+            }
 
-            metrics?.RecordFailed();
-            metrics?.RecordProcessed();
-
-            OutboxProcessorLogger.LogFailed(logger, moduleName, ex, message);
+            OutboxProcessorLogger.LogFailed(logger, moduleName, ex, messages[0]);
         }
+        publishStopwatch.Stop();
+        metrics?.RecordPublishDuration(publishStopwatch.Elapsed.TotalMilliseconds);
+
+        await outboxStorage.UpdateMessagesAsync([.. messages], stoppingToken);
+        await outboxStorage.CommitAsync(stoppingToken);
+
+        cycleStopwatch.Stop();
+        metrics?.RecordCycleDuration(cycleStopwatch.Elapsed.TotalMilliseconds);
     }
 
     private static Dictionary<string, string> SetRequiredHeader(

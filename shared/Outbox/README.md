@@ -131,6 +131,7 @@ builder.Services.AddOutbox<OrdersDbContext>()
     {
         o.IntervalInSeconds = 10;  // default: 10
         o.BatchSize         = 30;  // default: 30
+        o.MaxParallelism    = 3;   // default: 1 (concurrent workers per cycle)
     });
 ```
 
@@ -157,7 +158,7 @@ builder.Services.AddKeyedOutbox<InventoryDbContext>("inventory")
 | Method | Description |
 | --- | --- |
 | `.UsePostgresStorage(configure)` | Sets `ConnectionString`, `Schema`, and `TableName` |
-| `.WithSettings(configure)` | Sets `IntervalInSeconds` and `BatchSize` |
+| `.WithSettings(configure)` | Sets `IntervalInSeconds`, `BatchSize`, and `MaxParallelism` |
 | `.WithResilience(pipeline)` | Replaces the default Polly retry policy |
 | `.WithMetrics(configure?)` | Opt-in throughput metrics (see [Metrics](#metrics)) |
 
@@ -248,12 +249,14 @@ public interface IOutboxPublisher
 
 `OutboxProcessorBackgroundService` runs in a loop:
 
-1. Opens a PostgreSQL connection and begins a transaction.
-2. Selects up to `BatchSize` rows where `ProcessedOnUtc IS NULL`, ordered by `OccurredOnUtc`, using `FOR UPDATE` to prevent concurrent processing.
-3. For each message, calls `IMessageBus.PublishAsync` with the serialized payload, destination, and headers.
-4. On **success** — sets `ProcessedOnUtc = UTC now`, clears `Error` and `ErrorHandledOnUtc`.
-5. On **failure** — sets `ProcessedOnUtc = UTC now`, `ErrorHandledOnUtc = UTC now`, stores the exception message in `Error`. Retries up to **5 times** with exponential back-off and jitter (Polly).
-6. Commits the transaction and waits `IntervalInSeconds` before the next cycle.
+1. Spawns `MaxParallelism` concurrent workers via `Parallel.ForEachAsync`.
+2. Each worker opens a PostgreSQL connection and begins a transaction.
+3. Selects up to `BatchSize` rows where `ProcessedOnUtc IS NULL`, ordered by `OccurredOnUtc`, using `FOR UPDATE SKIP LOCKED` — workers never block each other.
+4. Calls `IMessageBus.PublishBatchAsync` with all messages in a single broker round-trip. Retries the entire batch up to **5 times** with exponential back-off and jitter (Polly).
+5. On **success** — sets `ProcessedOnUtc = UTC now`, clears `Error` and `ErrorHandledOnUtc` for every message.
+6. On **failure** — sets `ProcessedOnUtc = UTC now`, `ErrorHandledOnUtc = UTC now`, stores the exception message in `Error` for every message in the batch.
+7. Batch-updates all processed rows in a single `UPDATE … FROM (VALUES …)` statement.
+8. Commits the transaction and, after all workers finish, waits `IntervalInSeconds` before the next cycle.
 
 ### Custom resilience policy
 
@@ -321,7 +324,10 @@ builder.Services.AddOpenTelemetry()
 | `outbox.messages.failed` | Counter | `{message}` | Messages that failed to publish |
 | `outbox.messages.processed` | Counter | `{message}` | Total messages processed (success + failure) |
 | `outbox.fetch.duration` | Histogram | `ms` | Time taken to fetch a batch of messages from the database |
-| `outbox.update.duration` | Histogram | `ms` | Time taken to update a single message in the database |
+| `outbox.update.duration` | Histogram | `ms` | Time taken to batch-update processed messages in the database |
+| `outbox.publish.duration` | Histogram | `ms` | Time taken to publish the entire batch to the message broker |
+| `outbox.cycle.duration` | Histogram | `ms` | Total time for one full processing cycle (fetch → publish → update → commit) |
+| `outbox.batch.size` | Histogram | `{message}` | Number of messages processed per cycle |
 
 All instruments include a `module` tag with the value passed to `AddKeyedOutbox("module-name")` when using the keyed variant.
 
@@ -386,4 +392,56 @@ histogram_quantile(0.99, rate(outbox_update_duration_milliseconds_bucket[5m]))
 rate(outbox_update_duration_milliseconds_sum[5m])
   /
 rate(outbox_update_duration_milliseconds_count[5m])
+```
+
+#### Publish duration — time spent sending the batch to the broker (p99)
+
+```promql
+histogram_quantile(0.99, rate(outbox_publish_duration_milliseconds_bucket[5m]))
+```
+
+#### Average publish duration
+
+```promql
+rate(outbox_publish_duration_milliseconds_sum[5m])
+  /
+rate(outbox_publish_duration_milliseconds_count[5m])
+```
+
+#### Full cycle duration (p99) — end-to-end latency per processing cycle
+
+```promql
+histogram_quantile(0.99, rate(outbox_cycle_duration_milliseconds_bucket[5m]))
+```
+
+#### Average cycle duration
+
+```promql
+rate(outbox_cycle_duration_milliseconds_sum[5m])
+  /
+rate(outbox_cycle_duration_milliseconds_count[5m])
+```
+
+#### Average batch size per cycle
+
+```promql
+rate(outbox_batch_size_sum[5m])
+  /
+rate(outbox_batch_size_count[5m])
+```
+
+#### Effective throughput (messages/second derived from batch size and cycle duration)
+
+```promql
+rate(outbox_batch_size_sum[1m])
+  /
+rate(outbox_cycle_duration_milliseconds_sum[1m]) * 1000
+```
+
+#### Publish time share — fraction of the cycle spent publishing to the broker
+
+```promql
+rate(outbox_publish_duration_milliseconds_sum[5m])
+  /
+rate(outbox_cycle_duration_milliseconds_sum[5m])
 ```

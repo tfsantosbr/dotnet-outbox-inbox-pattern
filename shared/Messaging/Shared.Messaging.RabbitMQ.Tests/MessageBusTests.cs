@@ -188,6 +188,104 @@ public class RabbitMqMessageBusTests
         Assert.Equal(message.OccurredOnUtc.ToString("O"), capturedProps.Headers[OccurredOnUtc]);
     }
 
+    [Fact]
+    public async Task PublishBatchAsync_WithEmptyList_DoesNotPublish()
+    {
+        // Act
+        await _messageBus.PublishBatchAsync([]);
+
+        // Assert
+        await _connection.DidNotReceive().CreateChannelAsync(Arg.Any<CreateChannelOptions?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task PublishBatchAsync_WithMissingRequiredHeaders_Throws()
+    {
+        // Arrange
+        var items = new List<MessageBatchItem>
+        {
+            new("content", "exchange", null)
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _messageBus.PublishBatchAsync(items));
+    }
+
+    [Fact]
+    public async Task PublishBatchAsync_PublishesAllMessagesWithSingleLockAcquisition()
+    {
+        // Arrange
+        var items = new List<MessageBatchItem>
+        {
+            new("content1", "exchange-a", RequiredHeaders()),
+            new("content2", "exchange-b", RequiredHeaders()),
+        };
+
+        // Act
+        await _messageBus.PublishBatchAsync(items);
+
+        // Assert — channel created once, both messages published
+        await _connection.Received(1).CreateChannelAsync(Arg.Any<CreateChannelOptions?>(), Arg.Any<CancellationToken>());
+        await _channel.Received(2).BasicPublishAsync(
+            exchange: Arg.Any<string>(),
+            routingKey: Arg.Any<string>(),
+            mandatory: Arg.Any<bool>(),
+            basicProperties: Arg.Any<BasicProperties>(),
+            body: Arg.Any<ReadOnlyMemory<byte>>(),
+            cancellationToken: Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task PublishBatchAsync_DeclaresEachExchangeOnlyOnce()
+    {
+        // Arrange
+        var destination = "test-exchange";
+        var items = new List<MessageBatchItem>
+        {
+            new("content1", destination, RequiredHeaders()),
+            new("content2", destination, RequiredHeaders()),
+            new("content3", destination, RequiredHeaders()),
+        };
+
+        // Act
+        await _messageBus.PublishBatchAsync(items);
+
+        // Assert — exchange declared only once despite 3 messages to same exchange
+        await _channel.Received(1).ExchangeDeclareAsync(
+            exchange: destination,
+            type: Arg.Any<string>(),
+            durable: Arg.Any<bool>(),
+            autoDelete: Arg.Any<bool>(),
+            arguments: Arg.Any<IDictionary<string, object?>>(),
+            noWait: Arg.Any<bool>(),
+            cancellationToken: Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task PublishBatchAsync_DeclaresDifferentExchangesSeparately()
+    {
+        // Arrange
+        var items = new List<MessageBatchItem>
+        {
+            new("content1", "exchange-a", RequiredHeaders()),
+            new("content2", "exchange-b", RequiredHeaders()),
+        };
+
+        // Act
+        await _messageBus.PublishBatchAsync(items);
+
+        // Assert — two different exchanges → two ExchangeDeclareAsync calls
+        await _channel.Received(2).ExchangeDeclareAsync(
+            exchange: Arg.Any<string>(),
+            type: Arg.Any<string>(),
+            durable: Arg.Any<bool>(),
+            autoDelete: Arg.Any<bool>(),
+            arguments: Arg.Any<IDictionary<string, object?>>(),
+            noWait: Arg.Any<bool>(),
+            cancellationToken: Arg.Any<CancellationToken>());
+    }
+
     private static Dictionary<string, string> RequiredHeaders() => new()
     {
         { MessageId,      Guid.NewGuid().ToString() },

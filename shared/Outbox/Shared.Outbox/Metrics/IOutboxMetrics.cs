@@ -7,4 +7,7 @@ internal interface IOutboxMetrics
     void RecordProcessed(IReadOnlyDictionary<string, string>? tags = null);
     void RecordFetchDuration(double milliseconds, IReadOnlyDictionary<string, string>? tags = null);
     void RecordUpdateDuration(double milliseconds, IReadOnlyDictionary<string, string>? tags = null);
+    void RecordPublishDuration(double milliseconds, IReadOnlyDictionary<string, string>? tags = null);
+    void RecordCycleDuration(double milliseconds, IReadOnlyDictionary<string, string>? tags = null);
+    void RecordBatchSize(long count, IReadOnlyDictionary<string, string>? tags = null);
 }

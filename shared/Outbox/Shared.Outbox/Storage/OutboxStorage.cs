@@ -36,7 +36,7 @@ internal class OutboxStorage(
             WHERE "ProcessedOnUtc" IS NULL
             ORDER BY "OccurredOnUtc"
             LIMIT @BatchSize
-            FOR UPDATE;
+            FOR UPDATE SKIP LOCKED;
             """;
 
         var stopwatch = Stopwatch.StartNew();
@@ -53,30 +53,35 @@ internal class OutboxStorage(
         return messages.AsList();
     }
 
-    public async Task UpdateMessageAsync(OutboxMessage message, CancellationToken cancellationToken)
+    public async Task UpdateMessagesAsync(IReadOnlyList<OutboxMessage> messages, CancellationToken cancellationToken)
     {
+        if (messages.Count == 0) return;
+
+        var valuesList = string.Join(",",
+            messages.Select((_, i) => $"(@Id{i}::uuid, @ProcessedOn{i}::timestamptz, @Error{i}::text, @ErrorHandledOn{i}::timestamptz)"));
+
         var sql = $"""
             UPDATE "{_storage.Schema}"."{_storage.TableName}"
-            SET "ProcessedOnUtc" = @ProcessedOnUtc,
-                "Error" = @Error,
-                "ErrorHandledOnUtc" = @ErrorHandledOnUtc
-            WHERE "Id" = @Id;
+            SET "ProcessedOnUtc" = v.processed_on_utc,
+                "Error" = v.error,
+                "ErrorHandledOnUtc" = v.error_handled_on_utc
+            FROM (VALUES
+                {valuesList}
+            ) AS v(id, processed_on_utc, error, error_handled_on_utc)
+            WHERE "{_storage.Schema}"."{_storage.TableName}"."Id" = v.id
             """;
 
+        var parameters = new DynamicParameters();
+        for (int i = 0; i < messages.Count; i++)
+        {
+            parameters.Add($"Id{i}", messages[i].Id.ToString());
+            parameters.Add($"ProcessedOn{i}", messages[i].ProcessedOnUtc);
+            parameters.Add($"Error{i}", messages[i].Error);
+            parameters.Add($"ErrorHandledOn{i}", messages[i].ErrorHandledOnUtc);
+        }
+
         var stopwatch = Stopwatch.StartNew();
-
-        await _connection!.ExecuteAsync(
-            sql,
-            new
-            {
-                message.ProcessedOnUtc,
-                message.Error,
-                message.ErrorHandledOnUtc,
-                message.Id,
-            },
-            _transaction
-        );
-
+        await _connection!.ExecuteAsync(sql, parameters, _transaction);
         stopwatch.Stop();
         metrics?.RecordUpdateDuration(stopwatch.Elapsed.TotalMilliseconds);
     }

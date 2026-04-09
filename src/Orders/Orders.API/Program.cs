@@ -54,6 +54,7 @@ builder.Services.AddOutbox<OrdersDbContext>()
     {
         o.IntervalInSeconds = 5;
         o.BatchSize = 1000;
+        o.MaxParallelism = 5;
     })
     .WithMetrics();
 
@@ -91,6 +92,26 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
     db.Database.ExecuteSqlRaw("CREATE SCHEMA IF NOT EXISTS orders");
     db.Database.Migrate();
+
+    if (!db.OutboxMessages.Any())
+    {
+        db.Database.ExecuteSqlRaw("""
+            INSERT INTO "orders"."outbox_messages"
+                ("Id", "Type", "Destination", "Content", "Headers", "OccurredOnUtc")
+            SELECT
+                gen_random_uuid(),
+                'Shared.Contracts.Events.OrderCreatedIntegrationEvent, Shared.Contracts',
+                'order-created',
+                json_build_object(
+                    'OrderId',     gen_random_uuid(),
+                    'CustomerId',  gen_random_uuid(),
+                    'TotalAmount', 100.00
+                )::jsonb,
+                json_build_object('correlation-id', gen_random_uuid()::text)::jsonb,
+                NOW() + (gs * interval '1 millisecond')
+            FROM generate_series(1, 2000000) AS gs
+            """);
+    }
 }
 
 app.MapOrdersEndpoints();

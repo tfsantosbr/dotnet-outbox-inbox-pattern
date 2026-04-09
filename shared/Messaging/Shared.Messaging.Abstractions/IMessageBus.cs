@@ -15,4 +15,8 @@ public interface IMessageBus
         string destination,
         IDictionary<string, string>? headers = null,
         CancellationToken cancellationToken = default);
+
+    Task PublishBatchAsync(
+        IReadOnlyList<MessageBatchItem> messages,
+        CancellationToken cancellationToken = default);
 }

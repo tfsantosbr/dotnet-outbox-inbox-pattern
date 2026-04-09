@@ -101,10 +101,8 @@ public class OutboxProcessorTests
         // Assert
         await messageBus
             .DidNotReceive()
-            .PublishAsync(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<IDictionary<string, string>?>(),
+            .PublishBatchAsync(
+                Arg.Any<IReadOnlyList<MessageBatchItem>>(),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -135,16 +133,14 @@ public class OutboxProcessorTests
         // Assert
         await messageBus
             .Received(1)
-            .PublishAsync(
-                message.Content,
-                message.Destination,
-                Arg.Any<IDictionary<string, string>?>(),
+            .PublishBatchAsync(
+                Arg.Any<IReadOnlyList<MessageBatchItem>>(),
                 Arg.Any<CancellationToken>()
             );
 
         await outboxStorage
             .Received()
-            .UpdateMessageAsync(message, Arg.Any<CancellationToken>());
+            .UpdateMessagesAsync(Arg.Any<IReadOnlyList<OutboxMessage>>(), Arg.Any<CancellationToken>());
 
         Assert.NotNull(message.ProcessedOnUtc);
         Assert.Null(message.Error);
@@ -160,10 +156,8 @@ public class OutboxProcessorTests
         var exceptionMessage = "Connection refused";
 
         messageBus
-            .PublishAsync(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<IDictionary<string, string>?>(),
+            .PublishBatchAsync(
+                Arg.Any<IReadOnlyList<MessageBatchItem>>(),
                 Arg.Any<CancellationToken>()
             )
             .ThrowsAsync(new InvalidOperationException(exceptionMessage));
@@ -185,7 +179,7 @@ public class OutboxProcessorTests
         // Assert
         await outboxStorage
             .Received()
-            .UpdateMessageAsync(message, Arg.Any<CancellationToken>());
+            .UpdateMessagesAsync(Arg.Any<IReadOnlyList<OutboxMessage>>(), Arg.Any<CancellationToken>());
 
         Assert.NotNull(message.ProcessedOnUtc);
         Assert.NotNull(message.Error);

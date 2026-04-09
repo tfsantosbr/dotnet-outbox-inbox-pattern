@@ -21,5 +21,9 @@ public class OutboxMessageEntityConfig(string tableName = "OutboxMessages") : IE
         builder.HasIndex(o => o.OccurredOnUtc);
         builder.HasIndex(o => o.ProcessedOnUtc);
         builder.HasIndex(o => o.ErrorHandledOnUtc);
+
+        builder.HasIndex(o => o.OccurredOnUtc)
+            .HasFilter("\"ProcessedOnUtc\" IS NULL")
+            .HasDatabaseName("IX_outbox_messages_pending");
     }
 }

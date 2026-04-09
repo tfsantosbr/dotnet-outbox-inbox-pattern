@@ -13,6 +13,9 @@ internal sealed class OutboxMetrics : IOutboxMetrics, IDisposable
     private readonly Counter<long> _processed;
     private readonly Histogram<double> _fetchDuration;
     private readonly Histogram<double> _updateDuration;
+    private readonly Histogram<double> _publishDuration;
+    private readonly Histogram<double> _cycleDuration;
+    private readonly Histogram<long> _batchSize;
     private readonly IReadOnlyDictionary<string, string>? _globalTags;
 
     public OutboxMetrics(IMeterFactory meterFactory, IReadOnlyDictionary<string, string>? globalTags = null)
@@ -43,7 +46,22 @@ internal sealed class OutboxMetrics : IOutboxMetrics, IDisposable
         _updateDuration = _meter.CreateHistogram<double>(
             "outbox.update.duration",
             unit: "ms",
-            description: "Time taken to update a single outbox message in the database");
+            description: "Time taken to batch update outbox messages in the database");
+
+        _publishDuration = _meter.CreateHistogram<double>(
+            "outbox.publish.duration",
+            unit: "ms",
+            description: "Time taken to publish a batch of messages to the message broker");
+
+        _cycleDuration = _meter.CreateHistogram<double>(
+            "outbox.cycle.duration",
+            unit: "ms",
+            description: "Total time taken for one full outbox processing cycle");
+
+        _batchSize = _meter.CreateHistogram<long>(
+            "outbox.batch.size",
+            unit: "{message}",
+            description: "Number of messages processed per outbox cycle");
     }
 
     public void RecordPublished(IReadOnlyDictionary<string, string>? tags = null) =>
@@ -60,6 +78,15 @@ internal sealed class OutboxMetrics : IOutboxMetrics, IDisposable
 
     public void RecordUpdateDuration(double milliseconds, IReadOnlyDictionary<string, string>? tags = null) =>
         _updateDuration.Record(milliseconds, BuildTagList(tags));
+
+    public void RecordPublishDuration(double milliseconds, IReadOnlyDictionary<string, string>? tags = null) =>
+        _publishDuration.Record(milliseconds, BuildTagList(tags));
+
+    public void RecordCycleDuration(double milliseconds, IReadOnlyDictionary<string, string>? tags = null) =>
+        _cycleDuration.Record(milliseconds, BuildTagList(tags));
+
+    public void RecordBatchSize(long count, IReadOnlyDictionary<string, string>? tags = null) =>
+        _batchSize.Record(count, BuildTagList(tags));
 
     private TagList BuildTagList(IReadOnlyDictionary<string, string>? additionalTags)
     {

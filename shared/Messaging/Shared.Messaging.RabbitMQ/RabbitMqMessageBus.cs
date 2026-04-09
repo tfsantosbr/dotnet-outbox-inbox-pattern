@@ -21,6 +21,7 @@ internal sealed class RabbitMqMessageBus(
 {
     private IChannel? _channel;
     private readonly SemaphoreSlim _channelLock = new(1, 1);
+    private readonly HashSet<string> _declaredExchanges = [];
 
     public async Task PublishAsync<TMessage>(
         TMessage message,
@@ -49,6 +50,47 @@ internal sealed class RabbitMqMessageBus(
     {
         var options = new PublishOptions { Destination = destination };
         await PublishCoreAsync(message, options, headers, cancellationToken);
+    }
+
+    public async Task PublishBatchAsync(
+        IReadOnlyList<MessageBatchItem> messages,
+        CancellationToken cancellationToken = default)
+    {
+        if (messages.Count == 0) return;
+
+        foreach (var item in messages)
+            ValidateRequiredHeaders(item.Headers);
+
+        await _channelLock.WaitAsync(cancellationToken);
+        try
+        {
+            var channel = await GetOrCreateChannelAsync(cancellationToken);
+
+            foreach (var item in messages)
+            {
+                await EnsureExchangeDeclaredAsync(
+                    channel, item.Destination, RmqExchangeType.Fanout, durable: false, cancellationToken);
+
+                var properties = new BasicProperties
+                {
+                    Headers = item.Headers?.ToDictionary(h => h.Key, h => (object?)h.Value),
+                };
+
+                var body = Encoding.UTF8.GetBytes(item.Content);
+
+                await channel.BasicPublishAsync(
+                    exchange: item.Destination,
+                    routingKey: string.Empty,
+                    mandatory: false,
+                    basicProperties: properties,
+                    body: body,
+                    cancellationToken: cancellationToken);
+            }
+        }
+        finally
+        {
+            _channelLock.Release();
+        }
     }
 
     private PublishOptions GetPublishOptions<TMessage>() =>
@@ -99,11 +141,7 @@ internal sealed class RabbitMqMessageBus(
                 Headers = headers?.ToDictionary(h => h.Key, h => (object?)h.Value),
             };
 
-            await channel.ExchangeDeclareAsync(
-                exchange: baseOptions.Destination,
-                type: exchangeType,
-                durable: durable,
-                cancellationToken: cancellationToken);
+            await EnsureExchangeDeclaredAsync(channel, baseOptions.Destination, exchangeType, durable, cancellationToken);
 
             var body = Encoding.UTF8.GetBytes(json);
 
@@ -114,7 +152,6 @@ internal sealed class RabbitMqMessageBus(
                 basicProperties: properties,
                 body: body,
                 cancellationToken: cancellationToken);
-
         }
         finally
         {
@@ -122,9 +159,29 @@ internal sealed class RabbitMqMessageBus(
         }
     }
 
+    private async Task EnsureExchangeDeclaredAsync(
+        IChannel channel,
+        string exchange,
+        string exchangeType,
+        bool durable,
+        CancellationToken cancellationToken)
+    {
+        if (_declaredExchanges.Contains(exchange)) return;
+
+        await channel.ExchangeDeclareAsync(
+            exchange: exchange,
+            type: exchangeType,
+            durable: durable,
+            cancellationToken: cancellationToken);
+
+        _declaredExchanges.Add(exchange);
+    }
+
     private async Task<IChannel> GetOrCreateChannelAsync(CancellationToken cancellationToken)
     {
         if (_channel is { IsOpen: true }) return _channel;
+
+        _declaredExchanges.Clear();
 
         _channel = await connection.CreateChannelAsync(
             new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true),

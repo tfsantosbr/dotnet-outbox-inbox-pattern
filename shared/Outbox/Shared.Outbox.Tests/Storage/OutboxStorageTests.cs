@@ -60,7 +60,7 @@ public class OutboxStorageTests
     }
 
     [Fact]
-    public async Task UpdateMessageAsync_WithoutOpenConnection_ShouldThrowException()
+    public async Task UpdateMessagesAsync_WithoutOpenConnection_ShouldThrowException()
     {
         // Arrange
         var message = OutboxMessage.Create(
@@ -72,7 +72,7 @@ public class OutboxStorageTests
 
         // Act & Assert
         await Assert.ThrowsAsync<NullReferenceException>(
-            async () => await _storage.UpdateMessageAsync(message, CancellationToken.None)
+            async () => await _storage.UpdateMessagesAsync([message], CancellationToken.None)
         );
     }
 
