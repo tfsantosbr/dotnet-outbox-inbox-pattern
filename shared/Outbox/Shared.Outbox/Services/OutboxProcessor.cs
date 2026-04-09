@@ -39,16 +39,23 @@ internal sealed class OutboxProcessor<TContext>(
                 CancellationToken = stoppingToken
             };
 
+            var processedAny = 0;
+
             await Parallel.ForEachAsync(
                 Enumerable.Range(0, _processor.MaxParallelism),
                 parallelOptions,
-                async (_, token) => await ProcessMessages(token));
+                async (_, token) =>
+                {
+                    var hadMessages = await ProcessMessages(token);
+                    if (hadMessages) Interlocked.Increment(ref processedAny);
+                });
 
-            await Task.Delay(TimeSpan.FromSeconds(_processor.IntervalInSeconds), stoppingToken);
+            if (processedAny == 0)
+                await Task.Delay(TimeSpan.FromSeconds(_processor.IntervalInSeconds), stoppingToken);
         }
     }
 
-    private async Task ProcessMessages(CancellationToken stoppingToken)
+    private async Task<bool> ProcessMessages(CancellationToken stoppingToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
@@ -60,7 +67,7 @@ internal sealed class OutboxProcessor<TContext>(
 
         var messages = await outboxStorage.GetMessagesAsync(stoppingToken);
 
-        if (messages.Count == 0) return;
+        if (messages.Count == 0) return false;
 
         metrics?.RecordBatchSize(messages.Count);
 
@@ -74,6 +81,9 @@ internal sealed class OutboxProcessor<TContext>(
             await resiliencePipeline.ExecuteAsync(
                 async ct => await messageBus.PublishBatchAsync(batchItems, ct),
                 stoppingToken);
+
+            publishStopwatch.Stop();
+            metrics?.RecordPublishDuration(publishStopwatch.Elapsed.TotalMilliseconds);
 
             foreach (var m in messages)
             {
@@ -90,6 +100,9 @@ internal sealed class OutboxProcessor<TContext>(
         }
         catch (Exception ex)
         {
+            publishStopwatch.Stop();
+            metrics?.RecordPublishDuration(publishStopwatch.Elapsed.TotalMilliseconds);
+
             foreach (var m in messages)
             {
                 m.MarkAsProcessedWithError(ex.Message);
@@ -99,14 +112,14 @@ internal sealed class OutboxProcessor<TContext>(
 
             OutboxProcessorLogger.LogFailed(logger, moduleName, ex, messages[0]);
         }
-        publishStopwatch.Stop();
-        metrics?.RecordPublishDuration(publishStopwatch.Elapsed.TotalMilliseconds);
 
         await outboxStorage.UpdateMessagesAsync([.. messages], stoppingToken);
         await outboxStorage.CommitAsync(stoppingToken);
 
         cycleStopwatch.Stop();
         metrics?.RecordCycleDuration(cycleStopwatch.Elapsed.TotalMilliseconds);
+
+        return true;
     }
 
     private static Dictionary<string, string> SetRequiredHeader(
