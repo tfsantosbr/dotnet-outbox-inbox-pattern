@@ -11,6 +11,8 @@ internal sealed class OutboxMetrics : IOutboxMetrics, IDisposable
     private readonly Counter<long> _published;
     private readonly Counter<long> _failed;
     private readonly Counter<long> _processed;
+    private readonly Histogram<double> _fetchDuration;
+    private readonly Histogram<double> _updateDuration;
     private readonly IReadOnlyDictionary<string, string>? _globalTags;
 
     public OutboxMetrics(IMeterFactory meterFactory, IReadOnlyDictionary<string, string>? globalTags = null)
@@ -32,6 +34,16 @@ internal sealed class OutboxMetrics : IOutboxMetrics, IDisposable
             "outbox.messages.processed",
             unit: "{message}",
             description: "Total number of outbox messages processed, regardless of outcome");
+
+        _fetchDuration = _meter.CreateHistogram<double>(
+            "outbox.fetch.duration",
+            unit: "ms",
+            description: "Time taken to fetch a batch of outbox messages from the database");
+
+        _updateDuration = _meter.CreateHistogram<double>(
+            "outbox.update.duration",
+            unit: "ms",
+            description: "Time taken to update a single outbox message in the database");
     }
 
     public void RecordPublished(IReadOnlyDictionary<string, string>? tags = null) =>
@@ -42,6 +54,12 @@ internal sealed class OutboxMetrics : IOutboxMetrics, IDisposable
 
     public void RecordProcessed(IReadOnlyDictionary<string, string>? tags = null) =>
         _processed.Add(1, BuildTagList(tags));
+
+    public void RecordFetchDuration(double milliseconds, IReadOnlyDictionary<string, string>? tags = null) =>
+        _fetchDuration.Record(milliseconds, BuildTagList(tags));
+
+    public void RecordUpdateDuration(double milliseconds, IReadOnlyDictionary<string, string>? tags = null) =>
+        _updateDuration.Record(milliseconds, BuildTagList(tags));
 
     private TagList BuildTagList(IReadOnlyDictionary<string, string>? additionalTags)
     {

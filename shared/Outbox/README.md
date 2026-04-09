@@ -315,11 +315,13 @@ builder.Services.AddOpenTelemetry()
 
 ### Available instruments
 
-| Instrument | Type | Description |
-| --- | --- | --- |
-| `outbox.messages.published` | Counter | Messages successfully published to the broker |
-| `outbox.messages.failed` | Counter | Messages that failed to publish |
-| `outbox.messages.processed` | Counter | Total messages processed (success + failure) |
+| Instrument | Type | Unit | Description |
+| --- | --- | --- | --- |
+| `outbox.messages.published` | Counter | `{message}` | Messages successfully published to the broker |
+| `outbox.messages.failed` | Counter | `{message}` | Messages that failed to publish |
+| `outbox.messages.processed` | Counter | `{message}` | Total messages processed (success + failure) |
+| `outbox.fetch.duration` | Histogram | `ms` | Time taken to fetch a batch of messages from the database |
+| `outbox.update.duration` | Histogram | `ms` | Time taken to update a single message in the database |
 
 All instruments include a `module` tag with the value passed to `AddKeyedOutbox("module-name")` when using the keyed variant.
 
@@ -358,17 +360,30 @@ rate(outbox_messages_failed_total[5m])
 rate(outbox_messages_published_total{module="orders"}[1m])
 ```
 
----
+#### Fetch duration (p99 latency)
 
-## Checklist
+```promql
+histogram_quantile(0.99, rate(outbox_fetch_duration_milliseconds_bucket[5m]))
+```
 
-- [ ] `DbContext` implements `IOutboxDbContext`
-- [ ] `DbSet<OutboxMessage> OutboxMessages` declared on the `DbContext`
-- [ ] `OutboxMessageEntityConfig` applied in `OnModelCreating` with the correct table name
-- [ ] Migration generated and applied
-- [ ] `AddMessaging().UseRabbitMq(...)` registered before `AddOutbox`
-- [ ] `.AddPublishOptions<TEvent>` registered for each event type published via the outbox
-- [ ] `AddOutbox<TDbContext>()` (or `AddKeyedOutbox<TDbContext>("moduleName")` for multi-module) called
-- [ ] `.UsePostgresStorage(...)` configured with connection string, schema, and table name
-- [ ] `IOutboxPublisher` injected directly (non-keyed) or with `[FromKeyedServices("moduleName")]` (keyed)
-- [ ] `outboxPublisher.PublishAsync(...)` called **before** `SaveChangesAsync`
+#### Average fetch duration
+
+```promql
+rate(outbox_fetch_duration_milliseconds_sum[5m])
+  /
+rate(outbox_fetch_duration_milliseconds_count[5m])
+```
+
+#### Update duration (p99 latency)
+
+```promql
+histogram_quantile(0.99, rate(outbox_update_duration_milliseconds_bucket[5m]))
+```
+
+#### Average update duration
+
+```promql
+rate(outbox_update_duration_milliseconds_sum[5m])
+  /
+rate(outbox_update_duration_milliseconds_count[5m])
+```

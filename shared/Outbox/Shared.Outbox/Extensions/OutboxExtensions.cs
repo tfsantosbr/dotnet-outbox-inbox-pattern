@@ -22,10 +22,11 @@ public static class OutboxExtensions
 
         services.AddScoped<IOutboxPublisher, OutboxPublisher<TDbContext>>();
 
-        services.AddTransient<IOutboxStorage>(
-            _ => new OutboxStorage(
+        services.AddTransient<IOutboxStorage>(sp =>
+            new OutboxStorage(
                 Options.Create(builder.StorageOptions),
-                Options.Create(builder.ProcessorOptions)));
+                Options.Create(builder.ProcessorOptions),
+                sp.GetService<IOutboxMetrics>()));
 
         services.AddHostedService(sp =>
             new OutboxProcessor<TDbContext>(
@@ -51,9 +52,10 @@ public static class OutboxExtensions
         services.AddKeyedScoped<IOutboxPublisher, OutboxPublisher<TDbContext>>(moduleName);
 
         services.AddKeyedTransient<IOutboxStorage>(moduleName,
-            (_, _) => new OutboxStorage(
+            (sp, _) => new OutboxStorage(
                 Options.Create(builder.StorageOptions),
-                Options.Create(builder.ProcessorOptions)));
+                Options.Create(builder.ProcessorOptions),
+                sp.GetKeyedService<IOutboxMetrics>(moduleName)));
 
         services.AddHostedService(sp =>
             new OutboxProcessor<TDbContext>(

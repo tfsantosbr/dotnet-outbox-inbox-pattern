@@ -83,7 +83,7 @@ internal sealed class OutboxProcessor<TContext>(
                     metrics?.RecordPublished();
                     metrics?.RecordProcessed();
 
-                    LogPublished(message);
+                    OutboxProcessorLogger.LogPublished(logger, moduleName, message);
                 },
                 stoppingToken
             );
@@ -95,40 +95,8 @@ internal sealed class OutboxProcessor<TContext>(
             metrics?.RecordFailed();
             metrics?.RecordProcessed();
 
-            LogFailed(ex, message);
+            OutboxProcessorLogger.LogFailed(logger, moduleName, ex, message);
         }
-    }
-
-    private void LogPublished(OutboxMessage message)
-    {
-        if (moduleName is null)
-            logger.LogInformation(
-                "Published message '{MessageType}' with id '{Id}'",
-                message.GetTypeName(),
-                message.Id);
-        else
-            logger.LogInformation(
-                "Published message '{MessageType}' with id '{Id}' from '{Module}'",
-                message.GetTypeName(),
-                message.Id,
-                moduleName);
-    }
-
-    private void LogFailed(Exception ex, OutboxMessage message)
-    {
-        if (moduleName is null)
-            logger.LogError(
-                ex,
-                "Failed to publish message '{MessageType}' with id '{Id}'",
-                message.GetTypeName(),
-                message.Id);
-        else
-            logger.LogError(
-                ex,
-                "Failed to publish message '{MessageType}' with id '{Id}' from '{Module}'",
-                message.GetTypeName(),
-                message.Id,
-                moduleName);
     }
 
     private static Dictionary<string, string> SetRequiredHeader(

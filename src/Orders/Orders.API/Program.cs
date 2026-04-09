@@ -52,8 +52,8 @@ builder.Services.AddOutbox<OrdersDbContext>()
     })
     .WithSettings(o =>
     {
-        o.IntervalInSeconds = 10;
-        o.BatchSize = 30;
+        o.IntervalInSeconds = 5;
+        o.BatchSize = 1000;
     })
     .WithMetrics();
 

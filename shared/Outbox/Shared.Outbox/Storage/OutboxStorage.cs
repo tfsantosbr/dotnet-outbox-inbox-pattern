@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using Dapper;
 
 using Microsoft.Extensions.Options;
@@ -5,23 +7,23 @@ using Microsoft.Extensions.Options;
 using Npgsql;
 
 using Shared.Outbox.Abstractions;
+using Shared.Outbox.Metrics;
 using Shared.Outbox.Settings;
 
 namespace Shared.Outbox.Storage;
 
-public class OutboxStorage(
+internal class OutboxStorage(
     IOptions<OutboxStorageOptions> storageOptions,
-    IOptions<OutboxProcessorOptions> processorOptions
-) : IOutboxStorage, IAsyncDisposable
+    IOptions<OutboxProcessorOptions> processorOptions,
+    IOutboxMetrics? metrics = null) 
+    : IOutboxStorage, IAsyncDisposable
 {
     private readonly OutboxStorageOptions _storage = storageOptions.Value;
     private readonly OutboxProcessorOptions _processor = processorOptions.Value;
     private NpgsqlConnection? _connection;
     private NpgsqlTransaction? _transaction;
 
-    public async Task<IReadOnlyList<OutboxMessage>> GetMessagesAsync(
-        CancellationToken cancellationToken
-    )
+    public async Task<IReadOnlyList<OutboxMessage>> GetMessagesAsync(CancellationToken cancellationToken)
     {
         _connection = new NpgsqlConnection(_storage.ConnectionString);
         await _connection.OpenAsync(cancellationToken);
@@ -37,11 +39,16 @@ public class OutboxStorage(
             FOR UPDATE;
             """;
 
+        var stopwatch = Stopwatch.StartNew();
+
         var messages = await _connection.QueryAsync<OutboxMessage>(
             sql,
             new { _processor.BatchSize },
             _transaction
         );
+
+        stopwatch.Stop();
+        metrics?.RecordFetchDuration(stopwatch.Elapsed.TotalMilliseconds);
 
         return messages.AsList();
     }
@@ -56,6 +63,8 @@ public class OutboxStorage(
             WHERE "Id" = @Id;
             """;
 
+        var stopwatch = Stopwatch.StartNew();
+
         await _connection!.ExecuteAsync(
             sql,
             new
@@ -67,6 +76,9 @@ public class OutboxStorage(
             },
             _transaction
         );
+
+        stopwatch.Stop();
+        metrics?.RecordUpdateDuration(stopwatch.Elapsed.TotalMilliseconds);
     }
 
     public async Task CommitAsync(CancellationToken cancellationToken)
