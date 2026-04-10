@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: src/Orders/Orders.API/Dockerfile
-    container_name: outbox-orders-api
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
@@ -12,11 +11,13 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "orders-api"
     ports:
-      - "5176:8080"
+      - "5176-5178:8080"
     networks:
       - outbox-network
       - observability
     restart: unless-stopped
+    deploy:
+      replicas: 3
 
   notification-consumer:
     build:
