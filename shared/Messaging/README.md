@@ -84,11 +84,29 @@ The RabbitMQ implementation enforces the presence of `message-id` and `occurred-
 
 **`RabbitMqOptions`** — connection settings:
 
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `ConnectionString` | `string` | — | RabbitMQ connection URI, e.g. `amqp://guest:guest@localhost:5672` |
+| `PublisherConfirmationsEnabled` | `bool` | `true` | Enables AMQP publisher confirms. The broker acknowledges each published message, ensuring at-least-once delivery. When `false`, publishes are fire-and-forget — if the broker crashes after receiving the bytes, the message is silently lost with no exception. |
+| `PublisherConfirmationTrackingEnabled` | `bool` | `true` | Enables per-message confirmation tracking so individual publish failures are correlated back to their originating call. Requires `PublisherConfirmationsEnabled = true`. |
+
+> **Recommendation:** keep both properties at their default (`true`) when using the Outbox processor. The Outbox marks messages as processed only after a successful publish — if a publish silently succeeds without broker confirmation, a lost message will never be retried.
+>
+> Set both to `false` only when throughput is the priority and message loss is acceptable (e.g. metrics, telemetry, non-critical events).
+
 ```csharp
-public sealed class RabbitMqOptions
+.UseRabbitMq(o =>
 {
-    public string ConnectionString { get; set; }  // e.g. "amqp://guest:guest@localhost:5672"
-}
+    o.ConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")!;
+
+    // Default: true — broker confirms every publish (at-least-once delivery)
+    o.PublisherConfirmationsEnabled = true;
+    o.PublisherConfirmationTrackingEnabled = true;
+
+    // Set to false for fire-and-forget / maximum throughput scenarios
+    // o.PublisherConfirmationsEnabled = false;
+    // o.PublisherConfirmationTrackingEnabled = false;
+})
 ```
 
 **`RabbitMqPublishOptions`** — publish topology per message type:

@@ -38,8 +38,12 @@ internal sealed class PersistentRabbitMqConnection(
     public async Task<IChannel> CreateChannelAsync(CreateChannelOptions? channelOptions = null, CancellationToken cancellationToken = default)
     {
         await EnsureConnectedAsync(cancellationToken);
+
+        var opts = options.Value;
         return await _connection!.CreateChannelAsync(
-            channelOptions ?? new CreateChannelOptions(publisherConfirmationsEnabled: false, publisherConfirmationTrackingEnabled: false),
+            channelOptions ?? new CreateChannelOptions(
+                publisherConfirmationsEnabled: opts.PublisherConfirmationsEnabled,
+                publisherConfirmationTrackingEnabled: opts.PublisherConfirmationTrackingEnabled),
             cancellationToken);
     }
 

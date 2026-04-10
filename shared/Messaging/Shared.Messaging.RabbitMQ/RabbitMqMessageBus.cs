@@ -183,9 +183,7 @@ internal sealed class RabbitMqMessageBus(
 
         _declaredExchanges.Clear();
 
-        _channel = await connection.CreateChannelAsync(
-            new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true),
-            cancellationToken);
+        _channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
 
         logger.LogDebug("RabbitMQ publisher channel created");
 
