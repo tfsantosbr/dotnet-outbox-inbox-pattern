@@ -26,6 +26,13 @@
     <Project Path="shared/Outbox/Shared.Outbox.Tests/Shared.Outbox.Tests.csproj" />
     <Project Path="shared/Outbox/Shared.Outbox/Shared.Outbox.csproj" />
   </Folder>
+  <Folder Name="/shared/Inbox/">
+    <File Path="shared/Inbox/README.md" />
+    <Project Path="shared/Inbox/InboxPattern.Abstractions/InboxPattern.Abstractions.csproj" />
+    <Project Path="shared/Inbox/InboxPattern.EntityFrameworkCore.PostgreSQL/InboxPattern.EntityFrameworkCore.PostgreSQL.csproj" />
+    <Project Path="shared/Inbox/InboxPattern.Abstractions.UnitTests/InboxPattern.Abstractions.UnitTests.csproj" />
+    <Project Path="shared/Inbox/InboxPattern.EntityFrameworkCore.PostgreSQL.UnitTests/InboxPattern.EntityFrameworkCore.PostgreSQL.UnitTests.csproj" />
+  </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Inventory/">
     <Project Path="src/Inventory/Inventory.Consumer/Inventory.Consumer.csproj" />

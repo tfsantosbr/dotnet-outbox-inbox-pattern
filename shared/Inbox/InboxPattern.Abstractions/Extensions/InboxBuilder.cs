@@ -1,0 +1,23 @@
+using System.Diagnostics.Metrics;
+
+using InboxPattern.Abstractions.Metrics;
+
+using Microsoft.Extensions.DependencyInjection;
+
+namespace InboxPattern.Abstractions.Extensions;
+
+public sealed class InboxBuilder(IServiceCollection services)
+{
+    public IServiceCollection Services { get; } = services;
+
+    public InboxBuilder WithMetrics(Action<InboxMetricsOptions>? configure = null)
+    {
+        var options = new InboxMetricsOptions();
+        configure?.Invoke(options);
+
+        Services.AddSingleton<IInboxMetrics>(sp =>
+            new InboxMetrics(sp.GetRequiredService<IMeterFactory>()));
+
+        return this;
+    }
+}

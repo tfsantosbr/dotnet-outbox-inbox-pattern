@@ -1,3 +1,6 @@
+using InboxPattern.Abstractions.Extensions;
+using InboxPattern.EntityFrameworkCore.PostgreSQL.Extensions;
+
 using Inventory.Consumer.Application.Products.Commands;
 using Inventory.Consumer.Consumers;
 using Inventory.Consumer.Domain.Products;
@@ -19,6 +22,15 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddDbContext<InventoryDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
 builder.Services.AddScoped<ReduceStockCommandHandler>();
+
+builder.Services
+    .AddInbox()
+    .UsePostgreSQLStorage<InventoryDbContext>(options =>
+    {
+        options.Schema = "inventory";
+        options.TableName = "inbox_messages";
+    })
+    .WithMetrics();
 
 builder.Services.AddMessaging()
     .UseRabbitMq(options =>
