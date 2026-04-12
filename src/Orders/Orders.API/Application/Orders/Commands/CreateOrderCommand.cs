@@ -1,3 +1,3 @@
 namespace Orders.API.Application.Orders.Commands;
 
-public record CreateOrderCommand(Guid CustomerId, decimal TotalAmount);
+public record CreateOrderCommand(Guid CustomerId, decimal TotalAmount, Guid ProductId, int Quantity);

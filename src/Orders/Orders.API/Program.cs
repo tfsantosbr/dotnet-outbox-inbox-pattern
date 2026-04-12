@@ -95,11 +95,12 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var seedEnabled = app.Configuration.GetValue<bool>("Seed:Enabled");
 
     db.Database.ExecuteSqlRaw("CREATE SCHEMA IF NOT EXISTS orders");
     db.Database.Migrate();
 
-    if (!db.OutboxMessages.Any())
+    if (seedEnabled && !db.OutboxMessages.Any())
     {
         const int totalMessages = 3_000_000;
         const int batchSize = 1_000_000;
@@ -125,7 +126,9 @@ using (var scope = app.Services.CreateScope())
                     json_build_object(
                         'OrderId',     gen_random_uuid(),
                         'CustomerId',  gen_random_uuid(),
-                        'TotalAmount', 100.00
+                        'TotalAmount', 100.00,
+                        'ProductId',   '00000000-0000-0000-0000-000000000001',
+                        'Quantity',    1
                     )::jsonb,
                     json_build_object('correlation-id', gen_random_uuid()::text)::jsonb,
                     NOW() + (({offset} + gs) * interval '1 millisecond')
@@ -139,7 +142,10 @@ using (var scope = app.Services.CreateScope())
     }
     else
     {
-        logger.LogInformation("Outbox messages already seeded, skipping");
+        logger.LogInformation(
+            seedEnabled
+                ? "Outbox messages already seeded, skipping"
+                : "Seed disabled, skipping outbox seed");
     }
 }
 

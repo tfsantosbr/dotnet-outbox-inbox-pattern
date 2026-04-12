@@ -5,6 +5,7 @@ services:
       dockerfile: src/Orders/Orders.API/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      Seed__Enabled: "false"
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
       ConnectionStrings__RabbitMQ: "amqp://guest:guest@rabbitmq:5672/"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
@@ -26,6 +27,7 @@ services:
     container_name: outbox-notification-consumer
     environment:
       DOTNET_ENVIRONMENT: Production
+      Seed__Enabled: "false"
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
       ConnectionStrings__RabbitMQ: "amqp://guest:guest@rabbitmq:5672/"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
@@ -43,6 +45,7 @@ services:
     container_name: outbox-inventory-consumer
     environment:
       DOTNET_ENVIRONMENT: Production
+      Seed__Enabled: "true"
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
       ConnectionStrings__RabbitMQ: "amqp://guest:guest@rabbitmq:5672/"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"

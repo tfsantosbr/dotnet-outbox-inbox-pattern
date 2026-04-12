@@ -22,7 +22,9 @@ public class CreateOrderCommandHandler(
         var @event = new OrderCreatedIntegrationEvent(
             orderId: order.Id,
             customerId: order.CustomerId,
-            totalAmount: order.TotalAmount);
+            totalAmount: order.TotalAmount,
+            productId: command.ProductId,
+            quantity: command.Quantity);
 
         var headers = new Dictionary<string, string>
         {
