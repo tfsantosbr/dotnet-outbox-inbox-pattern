@@ -4,10 +4,12 @@ using InboxPattern.EntityFrameworkCore.PostgreSQL.Extensions;
 
 using Inventory.Consumer.Application.Products.Commands;
 using Inventory.Consumer.Consumers;
-using Inventory.Consumer.Domain.Products;
 using Inventory.Consumer.Infrastructure;
+using Inventory.Consumer.Infrastructure.Extensions;
+using Inventory.Consumer.Infrastructure.Seeding;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.FeatureManagement;
 
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -23,6 +25,14 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddDbContext<InventoryDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
 builder.Services.AddScoped<ReduceStockCommandHandler>();
+
+// Feature Management
+
+builder.Services.AddFeatureManagement();
+
+// Seeders
+
+builder.Services.AddDatabaseSeeder<ProductSeeder>();
 
 builder.Services
     .AddInbox()
@@ -78,24 +88,8 @@ builder.Services.AddOpenTelemetry()
 
 var host = builder.Build();
 
-using (var scope = host.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
-    var configuration = host.Services.GetRequiredService<IConfiguration>();
+host.ApplyMigrations();
 
-    db.Database.ExecuteSqlRaw("CREATE SCHEMA IF NOT EXISTS inventory");
-    db.Database.Migrate();
+await host.RunSeedersAsync();
 
-    var seedEnabled = configuration.GetValue<bool>("Seed:Enabled");
-
-    if (seedEnabled && !db.Products.Any())
-    {
-        db.Products.Add(new Product(
-            Guid.Parse("00000000-0000-0000-0000-000000000001"),
-            "Default Product",
-            stock: 10_000));
-        db.SaveChanges();
-    }
-}
-
-host.Run();
+await host.RunAsync();
