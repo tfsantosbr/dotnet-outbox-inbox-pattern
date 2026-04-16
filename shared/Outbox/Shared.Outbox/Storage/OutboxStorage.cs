@@ -31,10 +31,19 @@ internal class OutboxStorage(
         _transaction = await _connection.BeginTransactionAsync(cancellationToken);
 
         var sql = $"""
-            SELECT *
+            SELECT
+                "id"                 AS "Id",
+                "headers"            AS "Headers",
+                "type"               AS "Type",
+                "destination"        AS "Destination",
+                "content"            AS "Content",
+                "occurred_on_utc"    AS "OccurredOnUtc",
+                "processed_on_utc"   AS "ProcessedOnUtc",
+                "error_handled_on_utc" AS "ErrorHandledOnUtc",
+                "error"              AS "Error"
             FROM "{_storage.Schema}"."{_storage.TableName}"
-            WHERE "ProcessedOnUtc" IS NULL
-            ORDER BY "OccurredOnUtc"
+            WHERE "processed_on_utc" IS NULL
+            ORDER BY "occurred_on_utc"
             LIMIT @BatchSize
             FOR UPDATE SKIP LOCKED;
             """;
@@ -62,13 +71,13 @@ internal class OutboxStorage(
 
         var sql = $"""
             UPDATE "{_storage.Schema}"."{_storage.TableName}"
-            SET "ProcessedOnUtc" = v.processed_on_utc,
-                "Error" = v.error,
-                "ErrorHandledOnUtc" = v.error_handled_on_utc
+            SET "processed_on_utc" = v.processed_on_utc,
+                "error" = v.error,
+                "error_handled_on_utc" = v.error_handled_on_utc
             FROM (VALUES
                 {valuesList}
             ) AS v(id, processed_on_utc, error, error_handled_on_utc)
-            WHERE "{_storage.Schema}"."{_storage.TableName}"."Id" = v.id
+            WHERE "{_storage.Schema}"."{_storage.TableName}"."id" = v.id
             """;
 
         var parameters = new DynamicParameters();
