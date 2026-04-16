@@ -18,6 +18,10 @@ public static class RabbitMqMessagingExtensions
         this MessagingBuilder builder,
         Action<RabbitMqOptions> configure)
     {
+        var options = new RabbitMqOptions();
+        configure(options);
+        options.Validate();
+
         builder.Services.Configure<RabbitMqOptions>(configure);
         builder.Services.AddSingleton<IRabbitMqConnectionFactory, RabbitMqConnectionFactory>();
         builder.Services.AddSingleton<IPersistentRabbitMqConnection, PersistentRabbitMqConnection>();
@@ -33,6 +37,7 @@ public static class RabbitMqMessagingExtensions
     {
         var options = new RabbitMqPublishOptions();
         configure(options);
+        options.Validate();
         builder.Services.AddSingleton(new PublishTopologyEntry(typeof(TMessage), options));
         return builder;
     }
@@ -44,10 +49,7 @@ public static class RabbitMqMessagingExtensions
     {
         var options = new RabbitMqConsumerOptions();
         configure(options);
-
-        if (string.IsNullOrWhiteSpace(options.ConsumerName))
-            throw new InvalidOperationException(
-                $"ConsumerName is required. Set config.ConsumerName when registering {typeof(TConsumer).Name}.");
+        options.Validate();
 
         builder.Services.AddScoped<TConsumer>();
         builder.Services.AddHostedService(sp =>
@@ -68,10 +70,7 @@ public static class RabbitMqMessagingExtensions
     {
         var options = new RabbitMqConsumerOptions();
         configure(options);
-
-        if (string.IsNullOrWhiteSpace(options.ConsumerName))
-            throw new InvalidOperationException(
-                $"ConsumerName is required. Set config.ConsumerName when registering {typeof(TConsumer).Name}.");
+        options.Validate();
 
         builder.Services.AddScoped<TConsumer>();
         builder.Services.AddScoped(sp =>

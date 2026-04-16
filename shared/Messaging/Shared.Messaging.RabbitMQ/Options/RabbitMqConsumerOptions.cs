@@ -12,4 +12,26 @@ public sealed class RabbitMqConsumerOptions : ConsumerOptions
     public bool Exclusive { get; set; }
     public bool AutoDelete { get; set; }
     public string ConsumerName { get; set; } = string.Empty;
+
+    public override void Validate()
+    {
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(Exchange))
+            errors.Add("Exchange is required.");
+
+        if (string.IsNullOrWhiteSpace(Queue))
+            errors.Add("Queue is required.");
+
+        if (string.IsNullOrWhiteSpace(ConsumerName))
+            errors.Add("ConsumerName is required.");
+
+        if (ExchangeType is RabbitMqExchangeType.Direct or RabbitMqExchangeType.Topic
+            && string.IsNullOrWhiteSpace(RoutingKey))
+            errors.Add("RoutingKey is required when ExchangeType is Direct or Topic.");
+
+        if (errors.Count > 0)
+            throw new ArgumentException(
+                $"Invalid {nameof(RabbitMqConsumerOptions)}: {string.Join(" ", errors)}");
+    }
 }
