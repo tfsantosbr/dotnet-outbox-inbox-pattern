@@ -1,6 +1,6 @@
 using Orders.API.Application.Orders.Commands;
 
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Models;
 
 namespace Orders.API.Endpoints;
 

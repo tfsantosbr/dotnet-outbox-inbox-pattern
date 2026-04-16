@@ -7,7 +7,7 @@ using Outbox.Abstractions.Extensions;
 using Outbox.Abstractions.Interfaces;
 using Outbox.Abstractions.Models;
 using Outbox.EntityFrameworkCore.PostgreSQL.Extensions;
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Interfaces;
 
 namespace Outbox.EntityFrameworkCore.PostgreSQL.UnitTests.Extensions;
 

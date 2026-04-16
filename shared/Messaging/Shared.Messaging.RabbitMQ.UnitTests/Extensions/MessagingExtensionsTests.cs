@@ -1,11 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Interfaces;
 using Shared.Messaging.Abstractions.Extensions;
 using Shared.Messaging.RabbitMQ.Connection;
 using Shared.Messaging.RabbitMQ.Extensions;
 
-namespace Shared.Messaging.RabbitMQ.Tests.Extensions;
+namespace Shared.Messaging.RabbitMQ.UnitTests.Extensions;
 
 public class RabbitMqMessagingExtensionsTests
 {

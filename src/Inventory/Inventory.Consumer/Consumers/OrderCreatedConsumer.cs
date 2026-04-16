@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Shared.Contracts.Events;
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Interfaces;
+using Shared.Messaging.Abstractions.Models;
 
 namespace Inventory.Consumer.Consumers;
 

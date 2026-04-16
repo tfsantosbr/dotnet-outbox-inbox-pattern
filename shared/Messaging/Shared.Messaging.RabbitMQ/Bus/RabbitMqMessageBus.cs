@@ -6,13 +6,14 @@ using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 
 using Shared.Events;
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Interfaces;
+using Shared.Messaging.Abstractions.Models;
 using Shared.Messaging.RabbitMQ.Connection;
 using Shared.Messaging.RabbitMQ.Options;
 
 using RmqExchangeType = RabbitMQ.Client.ExchangeType;
 
-namespace Shared.Messaging.RabbitMQ;
+namespace Shared.Messaging.RabbitMQ.Bus;
 
 internal sealed class RabbitMqMessageBus(
     IPersistentRabbitMqConnection connection,

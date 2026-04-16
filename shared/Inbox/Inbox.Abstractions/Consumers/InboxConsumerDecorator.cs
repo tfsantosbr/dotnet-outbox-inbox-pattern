@@ -4,7 +4,8 @@ using Inbox.Abstractions.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Interfaces;
+using Shared.Messaging.Abstractions.Models;
 
 namespace Inbox.Abstractions.Consumers;
 

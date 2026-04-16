@@ -1,7 +1,7 @@
 using Orders.API.Infrastructure;
 using Outbox.Abstractions.Interfaces;
 using Shared.Contracts.Events;
-using static Shared.Messaging.Abstractions.MessageHeaders;
+using static Shared.Messaging.Abstractions.Models.MessageHeaders;
 
 namespace Orders.API.Application.Orders.Commands;
 

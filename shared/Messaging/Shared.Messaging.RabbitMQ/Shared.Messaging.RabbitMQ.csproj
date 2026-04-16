@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Shared.Messaging.RabbitMQ.Tests" />
+    <InternalsVisibleTo Include="Shared.Messaging.RabbitMQ.UnitTests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 

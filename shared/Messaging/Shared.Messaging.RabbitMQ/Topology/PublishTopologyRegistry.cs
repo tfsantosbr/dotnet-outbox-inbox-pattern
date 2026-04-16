@@ -1,6 +1,7 @@
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Interfaces;
+using Shared.Messaging.Abstractions.Models;
 
-namespace Shared.Messaging.RabbitMQ;
+namespace Shared.Messaging.RabbitMQ.Topology;
 
 internal sealed class PublishTopologyRegistry(IEnumerable<PublishTopologyEntry> entries)
     : IPublishTopologyRegistry

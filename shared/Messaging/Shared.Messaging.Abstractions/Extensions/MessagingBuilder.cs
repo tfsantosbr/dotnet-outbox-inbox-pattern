@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Shared.Messaging.Abstractions;
+namespace Shared.Messaging.Abstractions.Extensions;
 
 public sealed class MessagingBuilder(IServiceCollection services)
 {

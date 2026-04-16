@@ -14,7 +14,7 @@
   <Folder Name="/shared/Messaging/">
     <File Path="shared/Messaging/README.md" />
     <Project Path="shared/Messaging/Shared.Messaging.Abstractions/Shared.Messaging.Abstractions.csproj" />
-    <Project Path="shared/Messaging/Shared.Messaging.RabbitMQ.Tests/Shared.Messaging.RabbitMQ.Tests.csproj" />
+    <Project Path="shared/Messaging/Shared.Messaging.RabbitMQ.UnitTests/Shared.Messaging.RabbitMQ.UnitTests.csproj" />
     <Project Path="shared/Messaging/Shared.Messaging.RabbitMQ/Shared.Messaging.RabbitMQ.csproj" />
   </Folder>
   <Folder Name="/tests/">

@@ -1,7 +1,7 @@
 using Orders.API.Infrastructure;
 using Shared.Contracts.Events;
-using Shared.Messaging.Abstractions;
-using static Shared.Messaging.Abstractions.MessageHeaders;
+using Shared.Messaging.Abstractions.Interfaces;
+using static Shared.Messaging.Abstractions.Models.MessageHeaders;
 
 namespace Orders.API.Application.Orders.Commands;
 

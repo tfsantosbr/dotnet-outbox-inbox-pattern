@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Interfaces;
 using Shared.Messaging.RabbitMQ.Connection;
 using Shared.Messaging.RabbitMQ.Options;
 

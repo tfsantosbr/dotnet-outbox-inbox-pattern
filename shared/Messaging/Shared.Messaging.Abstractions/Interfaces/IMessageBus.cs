@@ -1,6 +1,7 @@
 using Shared.Events;
+using Shared.Messaging.Abstractions.Models;
 
-namespace Shared.Messaging.Abstractions;
+namespace Shared.Messaging.Abstractions.Interfaces;
 
 public interface IMessageBus
 {

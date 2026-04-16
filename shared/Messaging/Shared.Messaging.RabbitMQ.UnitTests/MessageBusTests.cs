@@ -5,12 +5,14 @@ using NSubstitute;
 using RabbitMQ.Client;
 
 using Shared.Events;
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Interfaces;
+using Shared.Messaging.Abstractions.Models;
+using Shared.Messaging.RabbitMQ.Bus;
 using Shared.Messaging.RabbitMQ.Connection;
 
-using static Shared.Messaging.Abstractions.MessageHeaders;
+using static Shared.Messaging.Abstractions.Models.MessageHeaders;
 
-namespace Shared.Messaging.RabbitMQ.Tests;
+namespace Shared.Messaging.RabbitMQ.UnitTests;
 
 public class RabbitMqMessageBusTests
 {

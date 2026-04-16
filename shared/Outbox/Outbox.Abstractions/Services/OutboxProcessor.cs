@@ -7,7 +7,8 @@ using Outbox.Abstractions.Interfaces;
 using Outbox.Abstractions.Metrics;
 using Outbox.Abstractions.Models;
 using Polly;
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Interfaces;
+using Shared.Messaging.Abstractions.Models;
 
 namespace Outbox.Abstractions.Services;
 

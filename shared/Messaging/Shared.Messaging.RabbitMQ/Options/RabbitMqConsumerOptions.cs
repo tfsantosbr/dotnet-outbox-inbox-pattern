@@ -1,4 +1,4 @@
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Models;
 
 namespace Shared.Messaging.RabbitMQ.Options;
 

@@ -1,5 +1,6 @@
 using Shared.Contracts.Events;
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Interfaces;
+using Shared.Messaging.Abstractions.Models;
 
 namespace Notification.Consumer.Consumers;
 

@@ -10,7 +10,8 @@ using Outbox.Abstractions.Models;
 using Outbox.Abstractions.Services;
 using Outbox.Abstractions.Settings;
 using Polly;
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Interfaces;
+using Shared.Messaging.Abstractions.Models;
 
 namespace Outbox.Abstractions.UnitTests.Services;
 

@@ -1,4 +1,6 @@
-namespace Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Models;
+
+namespace Shared.Messaging.Abstractions.Interfaces;
 
 public interface IMessageConsumer<in TMessage>
 {

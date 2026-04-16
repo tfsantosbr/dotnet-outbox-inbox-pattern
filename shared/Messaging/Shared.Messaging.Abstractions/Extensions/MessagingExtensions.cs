@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 
+using Shared.Messaging.Abstractions.Models;
+
 namespace Shared.Messaging.Abstractions.Extensions;
 
 public static class MessagingExtensions

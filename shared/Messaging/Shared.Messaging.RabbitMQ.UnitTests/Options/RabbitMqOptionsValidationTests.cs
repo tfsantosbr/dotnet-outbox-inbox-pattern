@@ -1,6 +1,6 @@
 using Shared.Messaging.RabbitMQ.Options;
 
-namespace Shared.Messaging.RabbitMQ.Tests.Options;
+namespace Shared.Messaging.RabbitMQ.UnitTests.Options;
 
 public class RabbitMqOptionsValidationTests
 {

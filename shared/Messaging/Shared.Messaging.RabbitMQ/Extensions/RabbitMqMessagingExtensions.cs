@@ -5,10 +5,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-using Shared.Messaging.Abstractions;
+using Shared.Messaging.Abstractions.Extensions;
+using Shared.Messaging.Abstractions.Interfaces;
+using Shared.Messaging.Abstractions.Models;
+using Shared.Messaging.RabbitMQ.Bus;
 using Shared.Messaging.RabbitMQ.Connection;
 using Shared.Messaging.RabbitMQ.Consumers;
 using Shared.Messaging.RabbitMQ.Options;
+using Shared.Messaging.RabbitMQ.Topology;
 
 namespace Shared.Messaging.RabbitMQ.Extensions;
 
