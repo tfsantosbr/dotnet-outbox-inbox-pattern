@@ -6,8 +6,11 @@ using Inventory.Consumer.Application.Products.Commands;
 using Inventory.Consumer.Consumers;
 using Inventory.Consumer.Domain.Products;
 using Inventory.Consumer.Infrastructure;
+using Inventory.Consumer.Infrastructure.Extensions;
+using Inventory.Consumer.Infrastructure.Seeding;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.FeatureManagement;
 
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -55,6 +58,14 @@ builder.Services.AddMessaging()
         config.ConsumerName = "inventory.order-total-amount-updated-consumer";
     });
 
+// Feature Management
+
+builder.Services.AddFeatureManagement();
+
+// Seeders
+
+builder.Services.AddDatabaseSeeder<InboxDuplicateTestSeeder>();
+
 // Observability
 
 builder.Logging.AddOpenTelemetry(logging =>
@@ -97,5 +108,7 @@ using (var scope = host.Services.CreateScope())
         db.SaveChanges();
     }
 }
+
+await host.RunSeedersAsync();
 
 host.Run();
