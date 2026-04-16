@@ -2,19 +2,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-
-using Polly;
-
-using Shared.Messaging.Abstractions;
-
 using Outbox.Abstractions.Database;
 using Outbox.Abstractions.Interfaces;
 using Outbox.Abstractions.Models;
 using Outbox.Abstractions.Services;
 using Outbox.Abstractions.Settings;
+using Polly;
+using Shared.Messaging.Abstractions;
 
 namespace Outbox.Abstractions.UnitTests.Services;
 

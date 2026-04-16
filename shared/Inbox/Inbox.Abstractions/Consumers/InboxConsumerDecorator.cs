@@ -47,7 +47,7 @@ public sealed class InboxConsumerDecorator<TMessage>(
         {
             var result = await innerConsumer.ConsumeAsync(message, context, cancellationToken);
 
-            inboxMessage.MarkAsPublished();
+            inboxMessage.MarkAsProcessed();
             await inboxStorage.UpdateAsync(inboxMessage, cancellationToken);
 
             if (result.IsAck || result is { IsNack: true, Requeue: false })

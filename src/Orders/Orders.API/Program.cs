@@ -9,13 +9,13 @@ using Orders.API.Endpoints;
 using Orders.API.Infrastructure;
 using Orders.API.Infrastructure.Extensions;
 using Orders.API.Infrastructure.Seeding;
+using Outbox.Abstractions.Extensions;
+using Outbox.Abstractions.Metrics;
+using Outbox.EntityFrameworkCore.PostgreSQL.Extensions;
 using Shared.Contracts.Events;
 using Shared.Messaging.Abstractions.Extensions;
 using Shared.Messaging.RabbitMQ.Extensions;
 using Shared.Messaging.RabbitMQ.Options;
-using Outbox.Abstractions.Extensions;
-using Outbox.Abstractions.Metrics;
-using Outbox.EntityFrameworkCore.PostgreSQL.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;

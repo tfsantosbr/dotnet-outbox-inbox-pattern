@@ -1,9 +1,8 @@
-using Shared.Events;
-using Shared.Messaging.Abstractions;
-
 using Outbox.Abstractions.Database;
 using Outbox.Abstractions.Interfaces;
 using Outbox.Abstractions.Models;
+using Shared.Events;
+using Shared.Messaging.Abstractions;
 
 namespace Outbox.EntityFrameworkCore.PostgreSQL.Publisher;
 

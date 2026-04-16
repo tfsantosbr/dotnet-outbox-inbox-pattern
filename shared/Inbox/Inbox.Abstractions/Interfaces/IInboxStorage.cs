@@ -9,10 +9,7 @@ namespace Inbox.Abstractions.Interfaces;
 public interface IInboxStorage
 {
     Task<InboxRegistrationResult> TryRegisterAsync(
-        InboxMessage message,
-        CancellationToken cancellationToken = default);
+        InboxMessage message, CancellationToken cancellationToken = default);
 
-    Task UpdateAsync(
-        InboxMessage message,
-        CancellationToken cancellationToken = default);
+    Task UpdateAsync(InboxMessage message, CancellationToken cancellationToken = default);
 }

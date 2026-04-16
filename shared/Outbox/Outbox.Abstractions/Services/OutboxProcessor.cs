@@ -1,17 +1,13 @@
 using System.Diagnostics;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
-using Polly;
-
-using Shared.Messaging.Abstractions;
-
 using Outbox.Abstractions.Database;
 using Outbox.Abstractions.Interfaces;
 using Outbox.Abstractions.Metrics;
 using Outbox.Abstractions.Models;
+using Polly;
+using Shared.Messaging.Abstractions;
 
 namespace Outbox.Abstractions.Services;
 
@@ -21,8 +17,7 @@ internal sealed class OutboxProcessor<TContext>(
     IServiceScopeFactory scopeFactory,
     ILogger<OutboxProcessor<TContext>> logger,
     ResiliencePipeline resiliencePipeline,
-    IOutboxMetrics? metrics = null
-)
+    IOutboxMetrics? metrics = null)
     where TContext : DbContext, IOutboxDbContext
 {
     internal async Task<bool> ProcessMessagesAsync(CancellationToken stoppingToken)

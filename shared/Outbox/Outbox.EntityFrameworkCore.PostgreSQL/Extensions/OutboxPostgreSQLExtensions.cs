@@ -1,8 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-
-using MsOptions = Microsoft.Extensions.Options.Options;
-
 using Outbox.Abstractions.Database;
 using Outbox.Abstractions.Extensions;
 using Outbox.Abstractions.Interfaces;
@@ -10,6 +7,7 @@ using Outbox.Abstractions.Metrics;
 using Outbox.EntityFrameworkCore.PostgreSQL.Options;
 using Outbox.EntityFrameworkCore.PostgreSQL.Publisher;
 using Outbox.EntityFrameworkCore.PostgreSQL.Storage;
+using MsOptions = Microsoft.Extensions.Options.Options;
 
 namespace Outbox.EntityFrameworkCore.PostgreSQL.Extensions;
 

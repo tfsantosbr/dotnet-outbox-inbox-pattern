@@ -4,14 +4,11 @@ using Inbox.Abstractions.Logging;
 using Inbox.Abstractions.Metrics;
 using Inbox.Abstractions.Models;
 using Inbox.EntityFrameworkCore.PostgreSQL.Options;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-
-using NpgsqlTypes;
-
 using Npgsql;
+using NpgsqlTypes;
 
 namespace Inbox.EntityFrameworkCore.PostgreSQL.Storage;
 

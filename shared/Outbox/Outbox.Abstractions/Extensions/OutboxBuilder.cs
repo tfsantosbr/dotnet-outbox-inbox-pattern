@@ -1,12 +1,9 @@
 using System.Diagnostics.Metrics;
-
 using Microsoft.Extensions.DependencyInjection;
-
-using Polly;
-
 using Outbox.Abstractions.Metrics;
 using Outbox.Abstractions.Resilience;
 using Outbox.Abstractions.Settings;
+using Polly;
 
 namespace Outbox.Abstractions.Extensions;
 

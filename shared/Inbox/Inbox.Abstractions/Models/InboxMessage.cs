@@ -16,7 +16,7 @@ public sealed class InboxMessage
     public DateTime? ErrorHandledOnUtc { get; private set; }
     public string? Error { get; private set; }
 
-    public void MarkAsPublished()
+    public void MarkAsProcessed()
     {
         ProcessedOnUtc = DateTime.UtcNow;
         Error = null;
@@ -34,6 +34,7 @@ public sealed class InboxMessage
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
         ArgumentException.ThrowIfNullOrWhiteSpace(consumer);
+        
         return new InboxMessage(messageId, consumer);
     }
 }

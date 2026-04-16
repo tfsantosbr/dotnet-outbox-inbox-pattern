@@ -1,6 +1,6 @@
+using Inventory.Consumer.Application.FeatureFlags;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
-using Inventory.Consumer.Application.FeatureFlags;
 
 namespace Inventory.Consumer.Infrastructure.Seeding;
 

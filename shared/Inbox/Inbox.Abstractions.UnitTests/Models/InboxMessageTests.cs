@@ -46,7 +46,7 @@ public class InboxMessageTests
         var message = InboxMessage.Create("msg-1", "consumer-a");
         var before = DateTime.UtcNow;
 
-        message.MarkAsPublished();
+        message.MarkAsProcessed();
 
         var after = DateTime.UtcNow;
         message.ProcessedOnUtc.Should().NotBeNull();
@@ -77,7 +77,7 @@ public class InboxMessageTests
         var message = InboxMessage.Create("msg-1", "consumer-a");
         message.MarkAsProcessedWithError("transient error");
 
-        message.MarkAsPublished();
+        message.MarkAsProcessed();
 
         message.ProcessedOnUtc.Should().NotBeNull();
         message.ErrorHandledOnUtc.Should().BeNull();

@@ -9,9 +9,8 @@ namespace Outbox.Abstractions.Services;
 
 internal sealed class OutboxBackgroundService<TContext>(
     OutboxProcessor<TContext> processor,
-    IOptions<OutboxProcessorOptions> processorOptions
-) : BackgroundService
-    where TContext : DbContext, IOutboxDbContext
+    IOptions<OutboxProcessorOptions> processorOptions)
+    : BackgroundService where TContext : DbContext, IOutboxDbContext
 {
     private readonly OutboxProcessorOptions _processor = processorOptions.Value;
 

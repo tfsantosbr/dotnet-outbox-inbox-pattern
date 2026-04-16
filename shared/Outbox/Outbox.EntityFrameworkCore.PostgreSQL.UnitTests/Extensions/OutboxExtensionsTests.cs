@@ -1,16 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-
 using NSubstitute;
-
-using Shared.Messaging.Abstractions;
-
 using Outbox.Abstractions.Database;
 using Outbox.Abstractions.Extensions;
 using Outbox.Abstractions.Interfaces;
 using Outbox.Abstractions.Models;
 using Outbox.EntityFrameworkCore.PostgreSQL.Extensions;
+using Shared.Messaging.Abstractions;
 
 namespace Outbox.EntityFrameworkCore.PostgreSQL.UnitTests.Extensions;
 
