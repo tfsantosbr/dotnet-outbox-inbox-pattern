@@ -18,7 +18,7 @@ public class InboxDuplicateTestSeeder(
     IFeatureManager featureManager,
     ILogger<InboxDuplicateTestSeeder> logger) : IDatabaseSeeder
 {
-    private const string InboxConsumer = "inventory.order-created";
+    private const string InboxConsumer = "inventory.order-created-consumer";
 
     // Deterministic GUIDs matching the first 4 outbox messages seeded in Orders.API
     private static readonly Guid[] DuplicateIds =

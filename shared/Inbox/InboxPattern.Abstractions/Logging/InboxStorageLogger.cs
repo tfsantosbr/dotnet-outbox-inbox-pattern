@@ -16,7 +16,7 @@ internal static class InboxStorageLogger
 
     public static void LogDuplicate<T>(ILogger<T> logger, InboxMessage message)
     {
-        logger.LogInformation(
+        logger.LogWarning(
             "Inbox message '{MessageId}' is duplicate for consumer '{Consumer}', skipping",
             message.MessageId,
             message.Consumer);
