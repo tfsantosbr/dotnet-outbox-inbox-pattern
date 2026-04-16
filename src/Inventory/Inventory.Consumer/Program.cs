@@ -4,7 +4,6 @@ using InboxPattern.EntityFrameworkCore.PostgreSQL.Extensions;
 
 using Inventory.Consumer.Application.Products.Commands;
 using Inventory.Consumer.Consumers;
-using Inventory.Consumer.Domain.Products;
 using Inventory.Consumer.Infrastructure;
 using Inventory.Consumer.Infrastructure.Extensions;
 using Inventory.Consumer.Infrastructure.Seeding;
@@ -26,6 +25,15 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddDbContext<InventoryDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
 builder.Services.AddScoped<ReduceStockCommandHandler>();
+
+// Feature Management
+
+builder.Services.AddFeatureManagement();
+
+// Seeders
+
+builder.Services.AddDatabaseSeeder<ProductSeeder>();
+builder.Services.AddDatabaseSeeder<InboxDuplicateTestSeeder>();
 
 builder.Services
     .AddInbox()
@@ -58,14 +66,6 @@ builder.Services.AddMessaging()
         config.ConsumerName = "inventory.order-total-amount-updated-consumer";
     });
 
-// Feature Management
-
-builder.Services.AddFeatureManagement();
-
-// Seeders
-
-builder.Services.AddDatabaseSeeder<InboxDuplicateTestSeeder>();
-
 // Observability
 
 builder.Logging.AddOpenTelemetry(logging =>
@@ -89,26 +89,8 @@ builder.Services.AddOpenTelemetry()
 
 var host = builder.Build();
 
-using (var scope = host.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
-    var configuration = host.Services.GetRequiredService<IConfiguration>();
-
-    db.Database.ExecuteSqlRaw("CREATE SCHEMA IF NOT EXISTS inventory");
-    db.Database.Migrate();
-
-    var seedEnabled = configuration.GetValue<bool>("Seed:Enabled");
-
-    if (seedEnabled && !db.Products.Any())
-    {
-        db.Products.Add(new Product(
-            Guid.Parse("00000000-0000-0000-0000-000000000001"),
-            "Default Product",
-            stock: 10_000));
-        db.SaveChanges();
-    }
-}
+host.ApplyMigrations();
 
 await host.RunSeedersAsync();
 
-host.Run();
+await host.RunAsync();
