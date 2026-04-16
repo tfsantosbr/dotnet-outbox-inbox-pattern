@@ -75,9 +75,9 @@ namespace Orders.API.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("occurred_on_utc");
 
-                    b.Property<DateTime?>("ProcessedOnUtc")
+                    b.Property<DateTime?>("PublishedOnUtc")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("processed_on_utc");
+                        .HasColumnName("published_on_utc");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -91,9 +91,9 @@ namespace Orders.API.Infrastructure.Migrations
 
                     b.HasIndex("OccurredOnUtc")
                         .HasDatabaseName("IX_outbox_messages_pending")
-                        .HasFilter("\"processed_on_utc\" IS NULL");
+                        .HasFilter("\"published_on_utc\" IS NULL");
 
-                    b.HasIndex("ProcessedOnUtc");
+                    b.HasIndex("PublishedOnUtc");
 
                     b.ToTable("outbox_messages", "orders");
                 });

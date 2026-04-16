@@ -21,7 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Shared.Messaging.Abstractions\Shared.Messaging.Abstractions.csproj" />
     <ProjectReference Include="..\..\Events\Shared.Events\Shared.Events.csproj" />
-    <ProjectReference Include="..\..\Inbox\InboxPattern.Abstractions\InboxPattern.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Inbox\Inbox.Abstractions\Inbox.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

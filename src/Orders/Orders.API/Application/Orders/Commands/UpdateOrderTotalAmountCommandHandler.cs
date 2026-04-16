@@ -1,6 +1,6 @@
 using Orders.API.Infrastructure;
 using Shared.Contracts.Events;
-using Shared.Outbox.Abstractions;
+using Outbox.Abstractions.Interfaces;
 using static Shared.Messaging.Abstractions.MessageHeaders;
 
 namespace Orders.API.Application.Orders.Commands;

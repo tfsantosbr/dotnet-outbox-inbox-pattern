@@ -23,7 +23,7 @@ namespace Inventory.Consumer.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("InboxPattern.Abstractions.Models.InboxMessage", b =>
+            modelBuilder.Entity("Inbox.Abstractions.Models.InboxMessage", b =>
                 {
                     b.Property<string>("MessageId")
                         .HasMaxLength(200)
@@ -35,9 +35,17 @@ namespace Inventory.Consumer.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("consumer");
 
-                    b.Property<DateTime>("ProcessedOnUtc")
+                    b.Property<DateTime?>("ProcessedOnUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_on_utc");
+
+                    b.Property<DateTime?>("ErrorHandledOnUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("error_handled_on_utc");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text")
+                        .HasColumnName("error");
 
                     b.HasKey("MessageId", "Consumer");
 

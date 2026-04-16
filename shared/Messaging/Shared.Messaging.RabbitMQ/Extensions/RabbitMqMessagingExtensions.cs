@@ -1,5 +1,5 @@
-using InboxPattern.Abstractions.Consumers;
-using InboxPattern.Abstractions.Interfaces;
+using Inbox.Abstractions.Consumers;
+using Inbox.Abstractions.Interfaces;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

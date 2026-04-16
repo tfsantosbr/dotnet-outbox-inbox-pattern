@@ -13,8 +13,9 @@ using Shared.Contracts.Events;
 using Shared.Messaging.Abstractions.Extensions;
 using Shared.Messaging.RabbitMQ.Extensions;
 using Shared.Messaging.RabbitMQ.Options;
-using Shared.Outbox.Extensions;
-using Shared.Outbox.Metrics;
+using Outbox.Abstractions.Extensions;
+using Outbox.Abstractions.Metrics;
+using Outbox.EntityFrameworkCore.PostgreSQL.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -51,7 +52,7 @@ builder.Services
 // Outbox
 
 builder.Services.AddOutbox<OrdersDbContext>()
-    .UsePostgresStorage(o =>
+    .UsePostgreSQLStorage<OrdersDbContext>(o =>
     {
         o.ConnectionString = configuration.GetConnectionString("Database")!;
         o.Schema = "orders";
