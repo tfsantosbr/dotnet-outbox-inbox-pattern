@@ -60,7 +60,7 @@ public class InboxDuplicateTestSeeder(
         {
             dbContext.Database.ExecuteSql($"""
                 INSERT INTO "orders"."outbox_messages"
-                    ("Id", "Type", "Destination", "Content", "Headers", "OccurredOnUtc")
+                    ("id", "type", "destination", "content", "headers", "occurred_on_utc")
                 VALUES (
                     {id},
                     'Shared.Contracts.Events.OrderCreatedIntegrationEvent, Shared.Contracts',
