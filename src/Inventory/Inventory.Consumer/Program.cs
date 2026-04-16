@@ -33,6 +33,7 @@ builder.Services.AddFeatureManagement();
 // Seeders
 
 builder.Services.AddDatabaseSeeder<ProductSeeder>();
+builder.Services.AddDatabaseSeeder<InboxDuplicateTestSeeder>();
 
 builder.Services
     .AddInbox()
