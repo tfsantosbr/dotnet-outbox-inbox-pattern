@@ -36,16 +36,46 @@ internal sealed class RabbitMqConsumerWorker<TMessage, TConsumer>(
             _ => RmqExchangeType.Fanout
         };
 
+        if (options.EnableDeadLetterQueue)
+        {
+            await channel.ExchangeDeclareAsync(
+                exchange: options.ResolvedDeadLetterExchange,
+                type: RmqExchangeType.Fanout,
+                durable: true,
+                cancellationToken: stoppingToken);
+
+            await channel.QueueDeclareAsync(
+                queue: options.ResolvedDeadLetterQueue,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                cancellationToken: stoppingToken);
+
+            await channel.QueueBindAsync(
+                queue: options.ResolvedDeadLetterQueue,
+                exchange: options.ResolvedDeadLetterExchange,
+                routingKey: options.ResolvedDeadLetterRoutingKey,
+                cancellationToken: stoppingToken);
+        }
+
         await channel.ExchangeDeclareAsync(
             exchange: options.Exchange,
             type: exchangeType,
             cancellationToken: stoppingToken);
+
+        var queueArguments = new Dictionary<string, object?>();
+        if (options.EnableDeadLetterQueue)
+        {
+            queueArguments["x-dead-letter-exchange"] = options.ResolvedDeadLetterExchange;
+            queueArguments["x-dead-letter-routing-key"] = options.ResolvedDeadLetterRoutingKey;
+        }
 
         await channel.QueueDeclareAsync(
             queue: options.Queue,
             durable: options.Durable,
             exclusive: options.Exclusive,
             autoDelete: options.AutoDelete,
+            arguments: queueArguments,
             cancellationToken: stoppingToken);
 
         await channel.QueueBindAsync(
