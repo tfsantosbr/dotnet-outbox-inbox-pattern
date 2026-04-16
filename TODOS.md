@@ -5,4 +5,6 @@
    2. Corrigir as queries sql raw que fazem chamadas nessas tabelas.
 2. Adicionar validação nas configurações do inbox/outbox consumers
 3. Criar uma validação no OrderCreatedConsumer.cs para que valide se o productId existe, se não existir deve mandar a mensagem para uma dead-letter queue
+4. Modificar o seed do consumer para usar Feature Flag igual o da API
+5. Migrar o seed que insere as mensagens na tabela de inbox que esta na API, para o inventory-consumer (lugar correto)
     
