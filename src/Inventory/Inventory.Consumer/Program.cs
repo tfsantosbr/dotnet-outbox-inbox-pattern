@@ -41,6 +41,7 @@ builder.Services.AddMessaging()
         config.Exchange = "order-created";
         config.Queue = "inventory.order-created";
         config.ConsumerName = "inventory.order-created-consumer";
+        config.EnableDeadLetterQueue = true;
     })
     .AddConsumer<OrderCustomerUpdatedConsumer, OrderCustomerUpdatedIntegrationEvent>(config =>
     {
