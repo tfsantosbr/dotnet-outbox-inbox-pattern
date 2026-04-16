@@ -19,4 +19,16 @@ public sealed class RabbitMqOptions
     /// Default is true.
     /// </summary>
     public bool PublisherConfirmationTrackingEnabled { get; set; } = true;
+
+    public void Validate()
+    {
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(ConnectionString))
+            errors.Add("ConnectionString is required.");
+
+        if (errors.Count > 0)
+            throw new ArgumentException(
+                $"Invalid {nameof(RabbitMqOptions)}: {string.Join(" ", errors)}");
+    }
 }
