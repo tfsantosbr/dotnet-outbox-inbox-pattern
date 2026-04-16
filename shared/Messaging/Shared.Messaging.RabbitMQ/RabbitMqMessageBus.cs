@@ -74,6 +74,7 @@ internal sealed class RabbitMqMessageBus(
                 var properties = new BasicProperties
                 {
                     Headers = item.Headers?.ToDictionary(h => h.Key, h => (object?)h.Value),
+                    MessageId = item.Headers is not null && item.Headers.TryGetValue(MessageHeaders.MessageId, out var batchMsgId) ? batchMsgId : null,
                 };
 
                 var body = Encoding.UTF8.GetBytes(item.Content);
@@ -139,6 +140,7 @@ internal sealed class RabbitMqMessageBus(
             var properties = new BasicProperties
             {
                 Headers = headers?.ToDictionary(h => h.Key, h => (object?)h.Value),
+                MessageId = headers is not null && headers.TryGetValue(MessageHeaders.MessageId, out var coreMsgId) ? coreMsgId : null,
             };
 
             await EnsureExchangeDeclaredAsync(channel, baseOptions.Destination, exchangeType, durable, cancellationToken);

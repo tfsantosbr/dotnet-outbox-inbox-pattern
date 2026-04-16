@@ -1,4 +1,5 @@
 using InboxPattern.Abstractions.Extensions;
+using InboxPattern.Abstractions.Metrics;
 using InboxPattern.EntityFrameworkCore.PostgreSQL.Extensions;
 
 using Inventory.Consumer.Application.Products.Commands;
@@ -67,6 +68,7 @@ builder.Services.AddOpenTelemetry()
         .AddEntityFrameworkCoreInstrumentation()
         .AddOtlpExporter())
     .WithMetrics(metrics => metrics
+        .AddMeter(InboxInstrumentation.MeterName)
         .AddHttpClientInstrumentation()
         .AddRuntimeInstrumentation()
         .AddOtlpExporter());

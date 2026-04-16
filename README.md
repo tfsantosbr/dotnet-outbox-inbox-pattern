@@ -77,13 +77,13 @@ The Orders API will be available at `http://localhost:5000` (or the port shown i
 ### Running Infra + Apps
 
 ```bash
-docker-compose -f docker-compose.infra.yml up -d && docker-compose up -d
+docker-compose up -d
 ```
 
 ### Stop and Remove Infra + Apps
 
 ```bash
-docker-compose -f docker-compose.infra.yml down -v && docker-compose down -v
+docker-compose down -v
 ```
 
 ## Stress test with K6

@@ -24,6 +24,7 @@ public class OrderCreatedConsumer(
         CancellationToken cancellationToken = default)
     {
         var messageId = context.MessageId;
+        
         if (string.IsNullOrWhiteSpace(messageId))
         {
             logger.LogWarning("[Inventory] Mensagem sem MessageId. Descartando sem requeue.");
@@ -31,25 +32,21 @@ public class OrderCreatedConsumer(
             return;
         }
 
-        context.Headers.TryGetValue(MessageHeaders.OccurredOnUtc, out var occurredOnUtc);
-        context.Headers.TryGetValue(MessageHeaders.CorrelationId, out var correlationId);
-        context.Headers.TryGetValue(MessageHeaders.CausationId, out var causationId);
-        context.Headers.TryGetValue(MessageHeaders.Source, out var source);
+        logger.LogInformation("[Inventory] Order received: {OrderId}. {@Message}", message.OrderId, message);
 
-        logger.LogInformation(
-            "[Inventory] Order received: {OrderId} | ProductId: {ProductId} | Quantity: {Quantity} | OccurredOnUtc: {OccurredOnUtc} CorrelationId: {CorrelationId} CausationId: {CausationId} Source: {Source}",
-            message.OrderId, message.ProductId, message.Quantity,
-            occurredOnUtc ?? "unknown", correlationId ?? "unknown",
-            causationId ?? "unknown", source ?? "unknown");
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        await using var efTransaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var inboxMessage = InboxMessage.Create(
+            messageId: messageId, 
+            consumer: ConsumerName, 
+            processedOnUtc: DateTime.UtcNow
+            );
 
-        var inboxMessage = InboxMessage.Create(messageId, ConsumerName, DateTime.UtcNow);
         var inboxResult = await inboxStorage.TryRegisterAsync(inboxMessage, cancellationToken);
 
         if (inboxResult.IsDuplicate)
         {
-            await efTransaction.CommitAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             await context.AckAsync(cancellationToken: cancellationToken);
             return;
         }
@@ -57,7 +54,7 @@ public class OrderCreatedConsumer(
         var command = new ReduceStockCommand(message.ProductId, message.Quantity);
         await reduceStockCommandHandler.HandleAsync(command, cancellationToken);
 
-        await efTransaction.CommitAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         await context.AckAsync(cancellationToken: cancellationToken);
     }
 }

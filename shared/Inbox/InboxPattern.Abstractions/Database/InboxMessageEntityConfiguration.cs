@@ -14,8 +14,8 @@ public sealed class InboxMessageEntityConfiguration(string tableName = "inbox_me
 
         builder.ToTable(tableName);
         builder.HasKey(m => new { m.MessageId, m.Consumer });
-        builder.Property(m => m.MessageId).HasMaxLength(200).IsRequired();
-        builder.Property(m => m.Consumer).HasMaxLength(200).IsRequired();
-        builder.Property(m => m.ProcessedOnUtc).IsRequired();
+        builder.Property(m => m.MessageId).HasColumnName("message_id").HasMaxLength(200).IsRequired();
+        builder.Property(m => m.Consumer).HasColumnName("consumer").HasMaxLength(200).IsRequired();
+        builder.Property(m => m.ProcessedOnUtc).HasColumnName("processed_on_utc").IsRequired();
     }
 }

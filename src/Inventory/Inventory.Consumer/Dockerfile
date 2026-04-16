@@ -5,6 +5,8 @@ COPY shared/Events/Shared.Events/Shared.Events.csproj shared/Events/Shared.Event
 COPY shared/Contracts/Shared.Contracts/Shared.Contracts.csproj shared/Contracts/Shared.Contracts/
 COPY shared/Messaging/Shared.Messaging.Abstractions/Shared.Messaging.Abstractions.csproj shared/Messaging/Shared.Messaging.Abstractions/
 COPY shared/Messaging/Shared.Messaging.RabbitMQ/Shared.Messaging.RabbitMQ.csproj shared/Messaging/Shared.Messaging.RabbitMQ/
+COPY shared/Inbox/InboxPattern.Abstractions/InboxPattern.Abstractions.csproj shared/Inbox/InboxPattern.Abstractions/
+COPY shared/Inbox/InboxPattern.EntityFrameworkCore.PostgreSQL/InboxPattern.EntityFrameworkCore.PostgreSQL.csproj shared/Inbox/InboxPattern.EntityFrameworkCore.PostgreSQL/
 COPY src/Inventory/Inventory.Consumer/Inventory.Consumer.csproj src/Inventory/Inventory.Consumer/
 RUN dotnet restore src/Inventory/Inventory.Consumer/Inventory.Consumer.csproj
 
@@ -12,6 +14,8 @@ COPY shared/Events/Shared.Events/ shared/Events/Shared.Events/
 COPY shared/Contracts/Shared.Contracts/ shared/Contracts/Shared.Contracts/
 COPY shared/Messaging/Shared.Messaging.Abstractions/ shared/Messaging/Shared.Messaging.Abstractions/
 COPY shared/Messaging/Shared.Messaging.RabbitMQ/ shared/Messaging/Shared.Messaging.RabbitMQ/
+COPY shared/Inbox/InboxPattern.Abstractions/ shared/Inbox/InboxPattern.Abstractions/
+COPY shared/Inbox/InboxPattern.EntityFrameworkCore.PostgreSQL/ shared/Inbox/InboxPattern.EntityFrameworkCore.PostgreSQL/
 COPY src/Inventory/Inventory.Consumer/ src/Inventory/Inventory.Consumer/
 RUN dotnet publish src/Inventory/Inventory.Consumer/Inventory.Consumer.csproj -c Release -o /app/publish --no-restore
 
