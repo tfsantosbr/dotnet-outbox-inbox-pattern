@@ -104,8 +104,6 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "inventory-consumer"
       FeatureManagement__InboxDuplicateTestSeed: "true"
-      Logging__LogLevel__Default: "None"
-      Logging__LogLevel__InboxPattern.EntityFrameworkCore.PostgreSQL.Storage.InboxStorage: "Information"
     networks:
       - outbox-network
       - observability
