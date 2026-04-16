@@ -22,12 +22,14 @@ public sealed class OutboxBuilder(IServiceCollection services, string? moduleNam
     public OutboxBuilder UsePostgresStorage(Action<OutboxStorageOptions> configure)
     {
         configure(StorageOptions);
+        StorageOptions.Validate();
         return this;
     }
 
     public OutboxBuilder WithSettings(Action<OutboxProcessorOptions> configure)
     {
         configure(ProcessorOptions);
+        ProcessorOptions.Validate();
         return this;
     }
 

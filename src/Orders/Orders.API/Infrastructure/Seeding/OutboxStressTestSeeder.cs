@@ -40,7 +40,7 @@ public class OutboxStressTestSeeder(
             dbContext.Database.SetCommandTimeout(300);
             dbContext.Database.ExecuteSql($"""
                 INSERT INTO "orders"."outbox_messages"
-                    ("Id", "Type", "Destination", "Content", "Headers", "OccurredOnUtc")
+                    ("id", "type", "destination", "content", "headers", "occurred_on_utc")
                 SELECT
                     gen_random_uuid(),
                     'Shared.Contracts.Events.OrderCreatedIntegrationEvent, Shared.Contracts',
