@@ -6,7 +6,7 @@ namespace Notification.Consumer.Consumers;
 public class OrderCreatedConsumer(ILogger<OrderCreatedConsumer> logger)
     : IMessageConsumer<OrderCreatedIntegrationEvent>
 {
-    public async Task ConsumeAsync(OrderCreatedIntegrationEvent message, IMessageContext context, CancellationToken cancellationToken = default)
+    public Task<ConsumerResult> ConsumeAsync(OrderCreatedIntegrationEvent message, IMessageContext context, CancellationToken cancellationToken = default)
     {
         context.Headers.TryGetValue(MessageHeaders.OccurredOnUtc, out var occurredOnUtc);
         context.Headers.TryGetValue(MessageHeaders.CorrelationId, out var correlationId);
@@ -17,6 +17,6 @@ public class OrderCreatedConsumer(ILogger<OrderCreatedConsumer> logger)
             "[Notification] Order received: {OrderId} | OccurredOnUtc: {OccurredOnUtc} CorrelationId: {CorrelationId} CausationId: {CausationId} Source: {Source}",
             message.OrderId, occurredOnUtc ?? "unknown", correlationId ?? "unknown", causationId ?? "unknown", source ?? "unknown");
 
-        await context.AckAsync(cancellationToken: cancellationToken);
+        return Task.FromResult(ConsumerResult.Ack());
     }
 }

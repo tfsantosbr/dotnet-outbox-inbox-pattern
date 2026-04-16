@@ -71,10 +71,12 @@ internal sealed class RabbitMqConsumerWorker<TMessage, TConsumer>(
                     ea.BasicProperties.MessageId,
                     ea.Redelivered);
 
-                await consumer.ConsumeAsync(message, context, stoppingToken);
+                var result = await consumer.ConsumeAsync(message, context, stoppingToken);
 
-                if (options.AckMode == AckMode.AutoOnSuccess)
+                if (result.IsAck)
                     await channel.BasicAckAsync(ea.DeliveryTag, multiple: false, stoppingToken);
+                else
+                    await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: result.Requeue, stoppingToken);
             }
             catch (Exception ex)
             {

@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Messaging\Shared.Messaging.Abstractions\Shared.Messaging.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="InboxPattern.Abstractions.UnitTests" />
     <InternalsVisibleTo Include="InboxPattern.EntityFrameworkCore.PostgreSQL" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />

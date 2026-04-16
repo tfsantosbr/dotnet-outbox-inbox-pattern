@@ -1,3 +1,7 @@
+using InboxPattern.Abstractions.Consumers;
+using InboxPattern.Abstractions.Interfaces;
+
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -41,6 +45,10 @@ public static class RabbitMqMessagingExtensions
         var options = new RabbitMqConsumerOptions();
         configure(options);
 
+        if (string.IsNullOrWhiteSpace(options.ConsumerName))
+            throw new InvalidOperationException(
+                $"ConsumerName is required. Set config.ConsumerName when registering {typeof(TConsumer).Name}.");
+
         builder.Services.AddScoped<TConsumer>();
         builder.Services.AddHostedService(sp =>
             new RabbitMqConsumerWorker<TMessage, TConsumer>(
@@ -48,6 +56,38 @@ public static class RabbitMqMessagingExtensions
                 sp.GetRequiredService<IServiceScopeFactory>(),
                 options,
                 sp.GetRequiredService<ILogger<RabbitMqConsumerWorker<TMessage, TConsumer>>>()));
+
+        return builder;
+    }
+
+    public static MessagingBuilder AddInboxConsumer<TConsumer, TMessage, TContext>(
+        this MessagingBuilder builder,
+        Action<RabbitMqConsumerOptions> configure)
+        where TConsumer : class, IMessageConsumer<TMessage>
+        where TContext : DbContext
+    {
+        var options = new RabbitMqConsumerOptions();
+        configure(options);
+
+        if (string.IsNullOrWhiteSpace(options.ConsumerName))
+            throw new InvalidOperationException(
+                $"ConsumerName is required. Set config.ConsumerName when registering {typeof(TConsumer).Name}.");
+
+        builder.Services.AddScoped<TConsumer>();
+        builder.Services.AddScoped(sp =>
+            new InboxConsumerDecorator<TMessage>(
+                sp.GetRequiredService<TConsumer>(),
+                sp.GetRequiredService<TContext>(),
+                sp.GetRequiredService<IInboxStorage>(),
+                options.ConsumerName,
+                sp.GetRequiredService<ILogger<InboxConsumerDecorator<TMessage>>>()));
+
+        builder.Services.AddHostedService(sp =>
+            new RabbitMqConsumerWorker<TMessage, InboxConsumerDecorator<TMessage>>(
+                sp.GetRequiredService<IRabbitMqConnectionFactory>(),
+                sp.GetRequiredService<IServiceScopeFactory>(),
+                options,
+                sp.GetRequiredService<ILogger<RabbitMqConsumerWorker<TMessage, InboxConsumerDecorator<TMessage>>>>()));
 
         return builder;
     }

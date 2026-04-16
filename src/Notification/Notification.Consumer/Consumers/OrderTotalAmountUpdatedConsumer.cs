@@ -6,7 +6,7 @@ namespace Notification.Consumer.Consumers;
 public class OrderTotalAmountUpdatedConsumer(ILogger<OrderTotalAmountUpdatedConsumer> logger)
     : IMessageConsumer<OrderTotalAmountUpdatedIntegrationEvent>
 {
-    public async Task ConsumeAsync(OrderTotalAmountUpdatedIntegrationEvent message, IMessageContext context, CancellationToken cancellationToken = default)
+    public Task<ConsumerResult> ConsumeAsync(OrderTotalAmountUpdatedIntegrationEvent message, IMessageContext context, CancellationToken cancellationToken = default)
     {
         context.Headers.TryGetValue(MessageHeaders.OccurredOnUtc, out var occurredOnUtc);
         context.Headers.TryGetValue(MessageHeaders.CorrelationId, out var correlationId);
@@ -18,6 +18,6 @@ public class OrderTotalAmountUpdatedConsumer(ILogger<OrderTotalAmountUpdatedCons
             message.OrderId, message.PreviousTotalAmount, message.NewTotalAmount,
             occurredOnUtc ?? "unknown", correlationId ?? "unknown", causationId ?? "unknown", source ?? "unknown");
 
-        await context.AckAsync(cancellationToken: cancellationToken);
+        return Task.FromResult(ConsumerResult.Ack());
     }
 }

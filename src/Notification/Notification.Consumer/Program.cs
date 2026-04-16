@@ -24,16 +24,19 @@ builder.Services.AddMessaging()
     {
         config.Exchange = "order-created";
         config.Queue = "notification.order-created";
+        config.ConsumerName = "notification.order-created-consumer";
     })
     .AddConsumer<OrderCustomerUpdatedConsumer, OrderCustomerUpdatedIntegrationEvent>(config =>
     {
         config.Exchange = "order-customer-updated";
         config.Queue = "notification.order-customer-updated";
+        config.ConsumerName = "notification.order-customer-updated-consumer";
     })
     .AddConsumer<OrderTotalAmountUpdatedConsumer, OrderTotalAmountUpdatedIntegrationEvent>(config =>
     {
         config.Exchange = "order-total-amount-updated";
         config.Queue = "notification.order-total-amount-updated";
+        config.ConsumerName = "notification.order-total-amount-updated-consumer";
     });
 
 // Observability

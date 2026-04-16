@@ -11,4 +11,5 @@ public sealed class RabbitMqConsumerOptions : ConsumerOptions
     public bool Durable { get; set; } = false;
     public bool Exclusive { get; set; }
     public bool AutoDelete { get; set; }
+    public string ConsumerName { get; set; } = string.Empty;
 }

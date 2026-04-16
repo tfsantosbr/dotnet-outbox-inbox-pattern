@@ -36,20 +36,23 @@ builder.Services
 builder.Services.AddMessaging()
     .UseRabbitMq(options =>
         options.ConnectionString = builder.Configuration.GetConnectionString("RabbitMQ")!)
-    .AddConsumer<OrderCreatedConsumer, OrderCreatedIntegrationEvent>(config =>
+    .AddInboxConsumer<OrderCreatedConsumer, OrderCreatedIntegrationEvent, InventoryDbContext>(config =>
     {
         config.Exchange = "order-created";
         config.Queue = "inventory.order-created";
+        config.ConsumerName = "inventory.order-created-consumer";
     })
     .AddConsumer<OrderCustomerUpdatedConsumer, OrderCustomerUpdatedIntegrationEvent>(config =>
     {
         config.Exchange = "order-customer-updated";
         config.Queue = "inventory.order-customer-updated";
+        config.ConsumerName = "inventory.order-customer-updated-consumer";
     })
     .AddConsumer<OrderTotalAmountUpdatedConsumer, OrderTotalAmountUpdatedIntegrationEvent>(config =>
     {
         config.Exchange = "order-total-amount-updated";
         config.Queue = "inventory.order-total-amount-updated";
+        config.ConsumerName = "inventory.order-total-amount-updated-consumer";
     });
 
 // Observability
