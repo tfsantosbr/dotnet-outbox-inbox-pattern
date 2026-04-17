@@ -30,7 +30,7 @@ public class ProductSeeder(
         dbContext.Products.Add(new Product(
             Guid.Parse("00000000-0000-0000-0000-000000000001"),
             "Default Product",
-            stock: 10_000));
+            stock: 100_000_000));
 
         await dbContext.SaveChangesAsync(cancellationToken);
 

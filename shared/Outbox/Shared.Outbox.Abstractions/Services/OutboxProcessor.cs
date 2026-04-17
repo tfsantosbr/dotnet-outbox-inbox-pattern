@@ -41,12 +41,21 @@ internal sealed class OutboxProcessor<TContext>(
             .Select(m => new MessageBatchItem(m.Content, m.Destination, SetRequiredHeader(m, m.GetHeaders())))
             .ToList();
 
+        var published = new bool[messages.Count];
+
         var publishStopwatch = Stopwatch.StartNew();
         try
         {
-            await resiliencePipeline.ExecuteAsync(
-                async ct => await messageBus.PublishBatchAsync(batchItems, ct),
-                stoppingToken);
+            await resiliencePipeline.ExecuteAsync(async ct =>
+            {
+                for (var i = 0; i < batchItems.Count; i++)
+                {
+                    if (published[i]) continue;
+                    var item = batchItems[i];
+                    await messageBus.PublishAsync(item.Content, item.Destination, item.Headers, ct);
+                    published[i] = true;
+                }
+            }, stoppingToken);
 
             publishStopwatch.Stop();
             metrics?.RecordPublishDuration(publishStopwatch.Elapsed.TotalMilliseconds);
@@ -69,14 +78,26 @@ internal sealed class OutboxProcessor<TContext>(
             publishStopwatch.Stop();
             metrics?.RecordPublishDuration(publishStopwatch.Elapsed.TotalMilliseconds);
 
-            foreach (var m in messages)
+            var firstFailed = true;
+            for (var i = 0; i < messages.Count; i++)
             {
-                m.MarkAsProcessedWithError(ex.Message);
-                metrics?.RecordFailed();
+                if (published[i])
+                {
+                    messages[i].MarkAsPublished();
+                    metrics?.RecordPublished();
+                }
+                else
+                {
+                    messages[i].MarkAsProcessedWithError(ex.Message);
+                    metrics?.RecordFailed();
+                    if (firstFailed)
+                    {
+                        OutboxProcessorLogger.LogFailed(logger, moduleName, ex, messages[i]);
+                        firstFailed = false;
+                    }
+                }
                 metrics?.RecordProcessed();
             }
-
-            OutboxProcessorLogger.LogFailed(logger, moduleName, ex, messages[0]);
         }
 
         await outboxStorage.UpdateMessagesAsync([.. messages], stoppingToken);

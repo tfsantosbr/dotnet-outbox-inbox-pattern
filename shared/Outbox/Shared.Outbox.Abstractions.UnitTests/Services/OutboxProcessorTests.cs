@@ -101,8 +101,10 @@ public class OutboxProcessorTests
         // Assert
         await messageBus
             .DidNotReceive()
-            .PublishBatchAsync(
-                Arg.Any<IReadOnlyList<MessageBatchItem>>(),
+            .PublishAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<IDictionary<string, string>>(),
                 Arg.Any<CancellationToken>()
             );
     }
@@ -133,8 +135,10 @@ public class OutboxProcessorTests
         // Assert
         await messageBus
             .Received(1)
-            .PublishBatchAsync(
-                Arg.Any<IReadOnlyList<MessageBatchItem>>(),
+            .PublishAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<IDictionary<string, string>>(),
                 Arg.Any<CancellationToken>()
             );
 
@@ -156,8 +160,10 @@ public class OutboxProcessorTests
         var exceptionMessage = "Connection refused";
 
         messageBus
-            .PublishBatchAsync(
-                Arg.Any<IReadOnlyList<MessageBatchItem>>(),
+            .PublishAsync(
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<IDictionary<string, string>>(),
                 Arg.Any<CancellationToken>()
             )
             .ThrowsAsync(new InvalidOperationException(exceptionMessage));
