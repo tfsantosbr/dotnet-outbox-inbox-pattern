@@ -1,0 +1,178 @@
+{
+  "users": [
+    {
+      "name": "guest",
+      "password_hash": "kD0stI8F6V3ufRzxD6M0NzOdXRPc6IfXISdOYS0KpwzOcmGF",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ["administrator"],
+      "limits": {}
+    }
+  ],
+  "permissions": [
+    {
+      "user": "guest",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "vhosts": [{ "name": "/" }],
+  "exchanges": [
+    {
+      "name": "order-created",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "order-created.dlq",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "order-customer-updated",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "order-total-amount-updated",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "inventory.order-created",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "exclusive": false,
+      "arguments": {
+        "x-dead-letter-exchange": "order-created.dlq",
+        "x-dead-letter-routing-key": "inventory.order-created.dlq"
+      }
+    },
+    {
+      "name": "inventory.order-created.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "exclusive": false,
+      "arguments": {}
+    },
+    {
+      "name": "notification.order-created",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "exclusive": false,
+      "arguments": {}
+    },
+    {
+      "name": "inventory.order-customer-updated",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "exclusive": false,
+      "arguments": {}
+    },
+    {
+      "name": "notification.order-customer-updated",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "exclusive": false,
+      "arguments": {}
+    },
+    {
+      "name": "inventory.order-total-amount-updated",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "exclusive": false,
+      "arguments": {}
+    },
+    {
+      "name": "notification.order-total-amount-updated",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "exclusive": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "order-created",
+      "vhost": "/",
+      "destination": "inventory.order-created",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "order-created",
+      "vhost": "/",
+      "destination": "notification.order-created",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "order-created.dlq",
+      "vhost": "/",
+      "destination": "inventory.order-created.dlq",
+      "destination_type": "queue",
+      "routing_key": "inventory.order-created.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "order-customer-updated",
+      "vhost": "/",
+      "destination": "inventory.order-customer-updated",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "order-customer-updated",
+      "vhost": "/",
+      "destination": "notification.order-customer-updated",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "order-total-amount-updated",
+      "vhost": "/",
+      "destination": "inventory.order-total-amount-updated",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "order-total-amount-updated",
+      "vhost": "/",
+      "destination": "notification.order-total-amount-updated",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    }
+  ]
+}

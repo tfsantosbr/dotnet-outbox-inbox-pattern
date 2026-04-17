@@ -31,7 +31,7 @@ public class OrderCreatedConsumer(
                 message.ProductId,
                 message.OrderId);
 
-            return ConsumerResult.Nack(requeue: false);
+            return ConsumerResult.Nack(requeue: false, error: $"Product {message.ProductId} not found. OrderId: {message.OrderId}");
         }
 
         var command = new ReduceStockCommand(message.ProductId, message.Quantity);
