@@ -1,5 +1,5 @@
-using Inbox.Abstractions.Database;
-using Inbox.Abstractions.Models;
+using Shared.Inbox.Abstractions.Database;
+using Shared.Inbox.Abstractions.Models;
 
 using Inventory.Consumer.Domain.Products;
 

@@ -1,6 +1,6 @@
-using Inbox.Abstractions.Extensions;
-using Inbox.Abstractions.Metrics;
-using Inbox.EntityFrameworkCore.PostgreSQL.Extensions;
+using Shared.Inbox.Abstractions.Extensions;
+using Shared.Inbox.Abstractions.Metrics;
+using Shared.Inbox.EntityFrameworkCore.PostgreSQL.Extensions;
 
 using Inventory.Consumer.Application.Products.Commands;
 using Inventory.Consumer.Consumers;

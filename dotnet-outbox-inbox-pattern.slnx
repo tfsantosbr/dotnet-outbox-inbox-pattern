@@ -22,17 +22,17 @@
   </Folder>
   <Folder Name="/shared/Outbox/">
     <File Path="shared/Outbox/README.md" />
-    <Project Path="shared/Outbox/Outbox.Abstractions/Outbox.Abstractions.csproj" />
-    <Project Path="shared/Outbox/Outbox.Abstractions.UnitTests/Outbox.Abstractions.UnitTests.csproj" />
-    <Project Path="shared/Outbox/Outbox.EntityFrameworkCore.PostgreSQL/Outbox.EntityFrameworkCore.PostgreSQL.csproj" />
-    <Project Path="shared/Outbox/Outbox.EntityFrameworkCore.PostgreSQL.UnitTests/Outbox.EntityFrameworkCore.PostgreSQL.UnitTests.csproj" />
+    <Project Path="shared/Outbox/Shared.Outbox.Abstractions/Shared.Outbox.Abstractions.csproj" />
+    <Project Path="shared/Outbox/Shared.Outbox.Abstractions.UnitTests/Shared.Outbox.Abstractions.UnitTests.csproj" />
+    <Project Path="shared/Outbox/Shared.Outbox.EntityFrameworkCore.PostgreSQL/Shared.Outbox.EntityFrameworkCore.PostgreSQL.csproj" />
+    <Project Path="shared/Outbox/Shared.Outbox.EntityFrameworkCore.PostgreSQL.UnitTests/Shared.Outbox.EntityFrameworkCore.PostgreSQL.UnitTests.csproj" />
   </Folder>
   <Folder Name="/shared/Inbox/">
     <File Path="shared/Inbox/README.md" />
-    <Project Path="shared/Inbox/Inbox.Abstractions/Inbox.Abstractions.csproj" />
-    <Project Path="shared/Inbox/Inbox.EntityFrameworkCore.PostgreSQL/Inbox.EntityFrameworkCore.PostgreSQL.csproj" />
-    <Project Path="shared/Inbox/Inbox.Abstractions.UnitTests/Inbox.Abstractions.UnitTests.csproj" />
-    <Project Path="shared/Inbox/Inbox.EntityFrameworkCore.PostgreSQL.UnitTests/Inbox.EntityFrameworkCore.PostgreSQL.UnitTests.csproj" />
+    <Project Path="shared/Inbox/Shared.Inbox.Abstractions/Shared.Inbox.Abstractions.csproj" />
+    <Project Path="shared/Inbox/Shared.Inbox.EntityFrameworkCore.PostgreSQL/Shared.Inbox.EntityFrameworkCore.PostgreSQL.csproj" />
+    <Project Path="shared/Inbox/Shared.Inbox.Abstractions.UnitTests/Shared.Inbox.Abstractions.UnitTests.csproj" />
+    <Project Path="shared/Inbox/Shared.Inbox.EntityFrameworkCore.PostgreSQL.UnitTests/Shared.Inbox.EntityFrameworkCore.PostgreSQL.UnitTests.csproj" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Inventory/">

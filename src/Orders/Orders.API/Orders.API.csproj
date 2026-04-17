@@ -25,8 +25,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\shared\Contracts\Shared.Contracts\Shared.Contracts.csproj" />
     <ProjectReference Include="..\..\..\shared\Messaging\Shared.Messaging.RabbitMQ\Shared.Messaging.RabbitMQ.csproj" />
-    <ProjectReference Include="..\..\..\shared\Outbox\Outbox.Abstractions\Outbox.Abstractions.csproj" />
-    <ProjectReference Include="..\..\..\shared\Outbox\Outbox.EntityFrameworkCore.PostgreSQL\Outbox.EntityFrameworkCore.PostgreSQL.csproj" />
+    <ProjectReference Include="..\..\..\shared\Outbox\Shared.Outbox.Abstractions\Shared.Outbox.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\shared\Outbox\Shared.Outbox.EntityFrameworkCore.PostgreSQL\Shared.Outbox.EntityFrameworkCore.PostgreSQL.csproj" />
   </ItemGroup>
 
 </Project>

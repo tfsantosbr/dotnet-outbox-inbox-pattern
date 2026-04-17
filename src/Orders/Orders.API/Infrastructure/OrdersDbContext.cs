@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Orders.API.Application.Orders;
 
-using Outbox.Abstractions.Database;
-using Outbox.Abstractions.Models;
+using Shared.Outbox.Abstractions.Database;
+using Shared.Outbox.Abstractions.Models;
 
 namespace Orders.API.Infrastructure;
 
