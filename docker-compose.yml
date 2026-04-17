@@ -49,13 +49,13 @@ services:
       dockerfile: src/Orders/Orders.API/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      FeatureManagement__OutboxStressTestSeed: "false"
-      FeatureManagement__InboxDuplicateTestSeed: "true"
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
       ConnectionStrings__RabbitMQ: "amqp://guest:guest@rabbitmq:5672/"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "orders-api"
+      FeatureManagement__OutboxStressTestSeed: "true"
+      FeatureManagement__InboxDuplicateTestSeed: "false"
     ports:
       - "5176-5178:8080"
     networks:
@@ -99,13 +99,13 @@ services:
     container_name: outbox-inventory-consumer
     environment:
       DOTNET_ENVIRONMENT: Production
-      FeatureManagement__ProductSeed: "true"
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"
       ConnectionStrings__RabbitMQ: "amqp://guest:guest@rabbitmq:5672/"
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
       OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
       OTEL_SERVICE_NAME: "inventory-consumer"
-      FeatureManagement__InboxDuplicateTestSeed: "true"
+      FeatureManagement__ProductSeed: "true"
+      FeatureManagement__InboxDuplicateTestSeed: "false"
     networks:
       - outbox-network
       - observability
