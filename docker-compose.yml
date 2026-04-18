@@ -96,7 +96,8 @@ services:
     build:
       context: .
       dockerfile: src/Inventory/Inventory.Consumer/Dockerfile
-    container_name: outbox-inventory-consumer
+    deploy:
+      replicas: 10
     environment:
       DOTNET_ENVIRONMENT: Production
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"

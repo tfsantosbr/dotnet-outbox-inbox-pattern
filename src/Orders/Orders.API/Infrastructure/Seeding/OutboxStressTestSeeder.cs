@@ -24,7 +24,7 @@ public class OutboxStressTestSeeder(
             return;
         }
 
-        const int totalMessages = 3_000_000;
+        const int totalMessages = 2_000_000;
         const int batchSize = 1_000_000;
         int totalBatches = totalMessages / batchSize;
 
@@ -49,7 +49,7 @@ public class OutboxStressTestSeeder(
                         'OrderId',     gen_random_uuid(),
                         'CustomerId',  gen_random_uuid(),
                         'TotalAmount', 100.00,
-                        'ProductId',   '00000000-0000-0000-0000-000000000001',
+                        'ProductId',   ('00000000-0000-0000-0000-' || lpad((floor(random() * 100) + 1)::bigint::text, 12, '0'))::uuid,
                         'Quantity',    1
                     )::jsonb,
                     json_build_object('correlation-id', gen_random_uuid()::text)::jsonb,

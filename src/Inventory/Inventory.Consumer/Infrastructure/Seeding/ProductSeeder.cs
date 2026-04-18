@@ -25,15 +25,18 @@ public class ProductSeeder(
             return;
         }
 
-        logger.LogInformation("Seeding default product");
+        logger.LogInformation("Seeding 100 products");
 
-        dbContext.Products.Add(new Product(
-            Guid.Parse("00000000-0000-0000-0000-000000000001"),
-            "Default Product",
-            stock: 100_000_000));
+        var products = Enumerable.Range(1, 100)
+            .Select(i => new Product(
+                Guid.Parse($"00000000-0000-0000-0000-{i:D12}"),
+                $"Product {i:D3}",
+                stock: 100_000_000))
+            .ToList();
 
+        dbContext.Products.AddRange(products);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        logger.LogInformation("Product seed completed");
+        logger.LogInformation("Product seed completed: 100 products inserted");
     }
 }
