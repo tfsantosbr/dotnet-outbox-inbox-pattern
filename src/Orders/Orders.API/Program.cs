@@ -30,8 +30,8 @@ builder.Services
     .UseRabbitMq(options =>
     {
         options.ConnectionString = configuration.GetConnectionString("RabbitMQ")!;
-        options.PublisherConfirmationsEnabled = true;
-        options.PublisherConfirmationTrackingEnabled = true;
+        options.PublisherConfirmationsEnabled = false;
+        options.PublisherConfirmationTrackingEnabled = false;
     })
     .AddPublishOptions<OrderCreatedIntegrationEvent>(o =>
     {

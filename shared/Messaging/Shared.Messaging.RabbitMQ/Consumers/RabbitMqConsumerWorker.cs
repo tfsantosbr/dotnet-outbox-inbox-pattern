@@ -26,6 +26,8 @@ internal sealed class RabbitMqConsumerWorker<TMessage, TConsumer>(
         var connection = await connectionFactory.CreateConnectionAsync(stoppingToken);
         var channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
+        await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: options.PrefetchCount, global: false, stoppingToken);
+
         var asyncConsumer = new AsyncEventingBasicConsumer(channel);
         asyncConsumer.ReceivedAsync += async (_, ea) =>
         {

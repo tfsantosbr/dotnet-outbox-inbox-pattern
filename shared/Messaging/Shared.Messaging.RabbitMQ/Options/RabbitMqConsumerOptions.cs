@@ -15,6 +15,7 @@ public sealed class RabbitMqConsumerOptions : ConsumerOptions
     public bool EnableDeadLetterQueue { get; set; }
     public string? DeadLetterExchange { get; set; }
     public string? DeadLetterRoutingKey { get; set; }
+    public ushort PrefetchCount { get; set; } = 1;
 
     internal string ResolvedDeadLetterExchange => DeadLetterExchange ?? $"{Exchange}.dlq";
     internal string ResolvedDeadLetterQueue => $"{Queue}.dlq";

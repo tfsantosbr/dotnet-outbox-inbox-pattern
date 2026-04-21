@@ -53,6 +53,7 @@ builder.Services.AddMessaging()
         config.Queue = "inventory.order-created";
         config.ConsumerName = "inventory.order-created-consumer";
         config.EnableDeadLetterQueue = true;
+        config.PrefetchCount = 200;
     })
     .AddConsumer<OrderCustomerUpdatedConsumer, OrderCustomerUpdatedIntegrationEvent>(config =>
     {
