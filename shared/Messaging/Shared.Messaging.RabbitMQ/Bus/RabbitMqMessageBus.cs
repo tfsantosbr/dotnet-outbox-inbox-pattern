@@ -115,7 +115,6 @@ internal sealed class RabbitMqMessageBus(
     {
         ValidateRequiredHeaders(headers);
         var rmqOptions = baseOptions as RabbitMqPublishOptions;
-
         var routingKey = rmqOptions?.RoutingKey ?? string.Empty;
 
         await _channelLock.WaitAsync(cancellationToken);

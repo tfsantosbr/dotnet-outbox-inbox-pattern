@@ -43,7 +43,7 @@ namespace Orders.API.Infrastructure.Migrations
                     b.ToTable("orders", "orders");
                 });
 
-            modelBuilder.Entity("Shared.Outbox.Abstractions.OutboxMessage", b =>
+            modelBuilder.Entity("Shared.Outbox.Abstractions.Models.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
@@ -75,9 +75,9 @@ namespace Orders.API.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("occurred_on_utc");
 
-                    b.Property<DateTime?>("PublishedOnUtc")
+                    b.Property<DateTime?>("ProcessedOnUtc")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("published_on_utc");
+                        .HasColumnName("processed_on_utc");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -91,9 +91,9 @@ namespace Orders.API.Infrastructure.Migrations
 
                     b.HasIndex("OccurredOnUtc")
                         .HasDatabaseName("IX_outbox_messages_pending")
-                        .HasFilter("\"published_on_utc\" IS NULL");
+                        .HasFilter("\"processed_on_utc\" IS NULL");
 
-                    b.HasIndex("PublishedOnUtc");
+                    b.HasIndex("ProcessedOnUtc");
 
                     b.ToTable("outbox_messages", "orders");
                 });

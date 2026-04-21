@@ -47,11 +47,11 @@ public class RabbitMqMessageBusTests
         // Act
         await _messageBus.PublishAsync(message, destination, RequiredHeaders());
 
-        // Assert
-        await _channel.Received(1).ExchangeDeclareAsync(
-            exchange: destination,
-            type: ExchangeType.Fanout,
-            durable: Arg.Is<bool>(v => !v),
+        // Assert — topology is provisioned by ApplyRabbitMqTopologyAsync, not at publish time
+        await _channel.DidNotReceive().ExchangeDeclareAsync(
+            exchange: Arg.Any<string>(),
+            type: Arg.Any<string>(),
+            durable: Arg.Any<bool>(),
             autoDelete: Arg.Any<bool>(),
             arguments: Arg.Any<IDictionary<string, object?>>(),
             noWait: Arg.Any<bool>(),
@@ -79,14 +79,22 @@ public class RabbitMqMessageBusTests
             { CorrelationId, "test-correlation" }
         });
 
-        // Assert
-        await _channel.Received(1).ExchangeDeclareAsync(
-            exchange: destination,
+        // Assert — topology is provisioned by ApplyRabbitMqTopologyAsync, not at publish time
+        await _channel.DidNotReceive().ExchangeDeclareAsync(
+            exchange: Arg.Any<string>(),
             type: Arg.Any<string>(),
             durable: Arg.Any<bool>(),
             autoDelete: Arg.Any<bool>(),
             arguments: Arg.Any<IDictionary<string, object?>>(),
             noWait: Arg.Any<bool>(),
+            cancellationToken: Arg.Any<CancellationToken>());
+
+        await _channel.Received(1).BasicPublishAsync(
+            exchange: destination,
+            routingKey: Arg.Any<string>(),
+            mandatory: Arg.Any<bool>(),
+            basicProperties: Arg.Any<BasicProperties>(),
+            body: Arg.Any<ReadOnlyMemory<byte>>(),
             cancellationToken: Arg.Any<CancellationToken>());
     }
 
@@ -239,9 +247,9 @@ public class RabbitMqMessageBusTests
     }
 
     [Fact]
-    public async Task PublishBatchAsync_DeclaresEachExchangeOnlyOnce()
+    public async Task PublishBatchAsync_DoesNotDeclareAnyExchange()
     {
-        // Arrange
+        // Arrange — topology is the responsibility of ApplyRabbitMqTopologyAsync, not the publisher
         var destination = "test-exchange";
         var items = new List<MessageBatchItem>
         {
@@ -253,32 +261,8 @@ public class RabbitMqMessageBusTests
         // Act
         await _messageBus.PublishBatchAsync(items);
 
-        // Assert — exchange declared only once despite 3 messages to same exchange
-        await _channel.Received(1).ExchangeDeclareAsync(
-            exchange: destination,
-            type: Arg.Any<string>(),
-            durable: Arg.Any<bool>(),
-            autoDelete: Arg.Any<bool>(),
-            arguments: Arg.Any<IDictionary<string, object?>>(),
-            noWait: Arg.Any<bool>(),
-            cancellationToken: Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task PublishBatchAsync_DeclaresDifferentExchangesSeparately()
-    {
-        // Arrange
-        var items = new List<MessageBatchItem>
-        {
-            new("content1", "exchange-a", RequiredHeaders()),
-            new("content2", "exchange-b", RequiredHeaders()),
-        };
-
-        // Act
-        await _messageBus.PublishBatchAsync(items);
-
-        // Assert — two different exchanges → two ExchangeDeclareAsync calls
-        await _channel.Received(2).ExchangeDeclareAsync(
+        // Assert
+        await _channel.DidNotReceive().ExchangeDeclareAsync(
             exchange: Arg.Any<string>(),
             type: Arg.Any<string>(),
             durable: Arg.Any<bool>(),

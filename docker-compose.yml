@@ -31,8 +31,8 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
-      - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./infra/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      # - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      # - ./infra/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
       interval: 10s
@@ -63,7 +63,7 @@ services:
       - observability
     restart: unless-stopped
     deploy:
-      replicas: 3
+      replicas: 1
     depends_on:
       postgres:
         condition: service_healthy
@@ -97,7 +97,7 @@ services:
       context: .
       dockerfile: src/Inventory/Inventory.Consumer/Dockerfile
     deploy:
-      replicas: 10
+      replicas: 1
     environment:
       DOTNET_ENVIRONMENT: Production
       ConnectionStrings__Database: "Host=postgres;Port=5432;Database=ordersdb;Username=postgres;Password=postgres"

@@ -106,6 +106,8 @@ var app = builder.Build();
 
 app.ApplyMigrations();
 
+await app.ApplyRabbitMqTopologyAsync();
+
 await app.RunSeedersAsync();
 
 app.MapOrdersEndpoints();

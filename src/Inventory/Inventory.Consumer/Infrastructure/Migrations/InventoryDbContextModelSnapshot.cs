@@ -23,35 +23,6 @@ namespace Inventory.Consumer.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Inbox.Abstractions.Models.InboxMessage", b =>
-                {
-                    b.Property<string>("MessageId")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("message_id");
-
-                    b.Property<string>("Consumer")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("consumer");
-
-                    b.Property<DateTime?>("ProcessedOnUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("processed_on_utc");
-
-                    b.Property<DateTime?>("ErrorHandledOnUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("error_handled_on_utc");
-
-                    b.Property<string>("Error")
-                        .HasColumnType("text")
-                        .HasColumnName("error");
-
-                    b.HasKey("MessageId", "Consumer");
-
-                    b.ToTable("inbox_messages", "inventory");
-                });
-
             modelBuilder.Entity("Inventory.Consumer.Domain.Products.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -69,6 +40,35 @@ namespace Inventory.Consumer.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("products", "inventory");
+                });
+
+            modelBuilder.Entity("Shared.Inbox.Abstractions.Models.InboxMessage", b =>
+                {
+                    b.Property<string>("MessageId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("message_id");
+
+                    b.Property<string>("Consumer")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("consumer");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text")
+                        .HasColumnName("error");
+
+                    b.Property<DateTime?>("ErrorHandledOnUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("error_handled_on_utc");
+
+                    b.Property<DateTime?>("ProcessedOnUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_on_utc");
+
+                    b.HasKey("MessageId", "Consumer");
+
+                    b.ToTable("inbox_messages", "inventory");
                 });
 #pragma warning restore 612, 618
         }

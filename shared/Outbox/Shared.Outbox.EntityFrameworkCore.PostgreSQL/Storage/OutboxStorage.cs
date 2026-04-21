@@ -40,11 +40,11 @@ internal class OutboxStorage(
                 "destination"          AS "Destination",
                 "content"              AS "Content",
                 "occurred_on_utc"      AS "OccurredOnUtc",
-                "published_on_utc"     AS "PublishedOnUtc",
+                "processed_on_utc"     AS "ProcessedOnUtc",
                 "error_handled_on_utc" AS "ErrorHandledOnUtc",
                 "error"                AS "Error"
             FROM "{_storage.Schema}"."{_storage.TableName}"
-            WHERE "published_on_utc" IS NULL
+            WHERE "processed_on_utc" IS NULL
             ORDER BY "occurred_on_utc"
             LIMIT @BatchSize
             FOR UPDATE SKIP LOCKED;
@@ -73,12 +73,12 @@ internal class OutboxStorage(
 
         var sql = $"""
             UPDATE "{_storage.Schema}"."{_storage.TableName}"
-            SET "published_on_utc" = v.published_on_utc,
+            SET "processed_on_utc" = v.processed_on_utc,
                 "error" = v.error,
                 "error_handled_on_utc" = v.error_handled_on_utc
             FROM (VALUES
                 {valuesList}
-            ) AS v(id, published_on_utc, error, error_handled_on_utc)
+            ) AS v(id, processed_on_utc, error, error_handled_on_utc)
             WHERE "{_storage.Schema}"."{_storage.TableName}"."id" = v.id
             """;
 
@@ -86,7 +86,7 @@ internal class OutboxStorage(
         for (int i = 0; i < messages.Count; i++)
         {
             parameters.Add($"Id{i}", messages[i].Id.ToString());
-            parameters.Add($"ProcessedOn{i}", messages[i].PublishedOnUtc);
+            parameters.Add($"ProcessedOn{i}", messages[i].ProcessedOnUtc);
             parameters.Add($"Error{i}", messages[i].Error);
             parameters.Add($"ErrorHandledOn{i}", messages[i].ErrorHandledOnUtc);
         }

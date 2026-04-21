@@ -28,7 +28,7 @@ public class OutboxPublisherTests
                 entity.Property(e => e.Content).IsRequired();
                 entity.Property(e => e.OccurredOnUtc).IsRequired();
                 entity.Property(e => e.Headers);
-                entity.Property(e => e.PublishedOnUtc);
+                entity.Property(e => e.ProcessedOnUtc);
                 entity.Property(e => e.ErrorHandledOnUtc);
                 entity.Property(e => e.Error);
             });

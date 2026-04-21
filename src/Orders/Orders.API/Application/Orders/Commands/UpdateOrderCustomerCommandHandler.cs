@@ -32,10 +32,10 @@ public class UpdateOrderCustomerCommandHandler(
             { Source, "orders-api" }
         };
 
-        await messageBus.PublishAsync(@event, headers);
-
         await dbContext.SaveChangesAsync();
 
+        await messageBus.PublishAsync(@event, headers);
+        
         return true;
     }
 }

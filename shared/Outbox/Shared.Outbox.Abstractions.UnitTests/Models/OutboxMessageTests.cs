@@ -26,7 +26,7 @@ public class OutboxMessageTests
         Assert.Equal(occurredOn, message.OccurredOnUtc);
         Assert.NotNull(message.Content);
         Assert.NotNull(message.Type);
-        Assert.Null(message.PublishedOnUtc);
+        Assert.Null(message.ProcessedOnUtc);
         Assert.Null(message.ErrorHandledOnUtc);
         Assert.Null(message.Error);
     }
@@ -107,9 +107,9 @@ public class OutboxMessageTests
         var afterProcessing = DateTime.UtcNow;
 
         // Assert
-        Assert.NotNull(message.PublishedOnUtc);
-        Assert.True(message.PublishedOnUtc >= beforeProcessing);
-        Assert.True(message.PublishedOnUtc <= afterProcessing);
+        Assert.NotNull(message.ProcessedOnUtc);
+        Assert.True(message.ProcessedOnUtc >= beforeProcessing);
+        Assert.True(message.ProcessedOnUtc <= afterProcessing);
     }
 
     [Fact]
@@ -132,11 +132,11 @@ public class OutboxMessageTests
         // Assert
         Assert.Equal(errorMessage, message.Error);
         Assert.NotNull(message.ErrorHandledOnUtc);
-        Assert.NotNull(message.PublishedOnUtc);
+        Assert.NotNull(message.ProcessedOnUtc);
         Assert.True(message.ErrorHandledOnUtc >= beforeFailure);
         Assert.True(message.ErrorHandledOnUtc <= afterFailure);
-        Assert.True(message.PublishedOnUtc >= beforeFailure);
-        Assert.True(message.PublishedOnUtc <= afterFailure);
+        Assert.True(message.ProcessedOnUtc >= beforeFailure);
+        Assert.True(message.ProcessedOnUtc <= afterFailure);
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public class OutboxMessageTests
             baseTime
         );
         message.MarkAsPublished();
-        var firstProcessedOn = message.PublishedOnUtc;
+        var firstProcessedOn = message.ProcessedOnUtc;
 
         // Act
         var laterMessage = OutboxMessage.Create(
@@ -227,8 +227,8 @@ public class OutboxMessageTests
         laterMessage.MarkAsPublished();
 
         // Assert
-        Assert.NotNull(laterMessage.PublishedOnUtc);
-        Assert.True(laterMessage.PublishedOnUtc >= firstProcessedOn);
+        Assert.NotNull(laterMessage.ProcessedOnUtc);
+        Assert.True(laterMessage.ProcessedOnUtc >= firstProcessedOn);
     }
 
     [Fact]
@@ -248,7 +248,7 @@ public class OutboxMessageTests
         message.MarkAsProcessedWithError("Error occurred");
 
         // Assert
-        Assert.NotNull(message.PublishedOnUtc);
+        Assert.NotNull(message.ProcessedOnUtc);
         Assert.NotNull(message.Error);
         Assert.NotNull(message.ErrorHandledOnUtc);
         Assert.Equal("Error occurred", message.Error);
@@ -285,6 +285,6 @@ public class OutboxMessageTests
         // Assert
         Assert.Null(message.Error);
         Assert.NotNull(message.ErrorHandledOnUtc);
-        Assert.NotNull(message.PublishedOnUtc);
+        Assert.NotNull(message.ProcessedOnUtc);
     }
 }

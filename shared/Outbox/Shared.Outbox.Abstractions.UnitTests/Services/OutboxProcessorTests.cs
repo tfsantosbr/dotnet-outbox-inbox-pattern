@@ -146,7 +146,7 @@ public class OutboxProcessorTests
             .Received()
             .UpdateMessagesAsync(Arg.Any<IReadOnlyList<OutboxMessage>>(), Arg.Any<CancellationToken>());
 
-        Assert.NotNull(message.PublishedOnUtc);
+        Assert.NotNull(message.ProcessedOnUtc);
         Assert.Null(message.Error);
     }
 
@@ -187,7 +187,7 @@ public class OutboxProcessorTests
             .Received()
             .UpdateMessagesAsync(Arg.Any<IReadOnlyList<OutboxMessage>>(), Arg.Any<CancellationToken>());
 
-        Assert.NotNull(message.PublishedOnUtc);
+        Assert.NotNull(message.ProcessedOnUtc);
         Assert.NotNull(message.Error);
         Assert.Equal(exceptionMessage, message.Error);
     }

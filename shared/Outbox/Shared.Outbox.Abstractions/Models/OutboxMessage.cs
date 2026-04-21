@@ -29,7 +29,7 @@ public class OutboxMessage
     public string Destination { get; init; } = string.Empty;
     public string Content { get; init; } = string.Empty;
     public DateTime OccurredOnUtc { get; init; }
-    public DateTime? PublishedOnUtc { get; private set; }
+    public DateTime? ProcessedOnUtc { get; private set; }
     public DateTime? ErrorHandledOnUtc { get; private set; }
     public string? Error { get; private set; }
 
@@ -44,14 +44,14 @@ public class OutboxMessage
 
     public void MarkAsPublished()
     {
-        PublishedOnUtc = DateTime.UtcNow;
+        ProcessedOnUtc = DateTime.UtcNow;
         Error = null;
         ErrorHandledOnUtc = null;
     }
 
     public void MarkAsProcessedWithError(string error)
     {
-        PublishedOnUtc = DateTime.UtcNow;
+        ProcessedOnUtc = DateTime.UtcNow;
         ErrorHandledOnUtc = DateTime.UtcNow;
         Error = error;
     }

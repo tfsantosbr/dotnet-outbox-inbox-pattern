@@ -3,6 +3,7 @@ using Shared.Inbox.Abstractions.Interfaces;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using Shared.Messaging.Abstractions.Extensions;
@@ -55,6 +56,7 @@ public static class RabbitMqMessagingExtensions
         configure(options);
         options.Validate();
 
+        builder.Services.AddSingleton(options);
         builder.Services.AddScoped<TConsumer>();
         builder.Services.AddHostedService(sp =>
             new RabbitMqConsumerWorker<TMessage, TConsumer>(
@@ -76,6 +78,7 @@ public static class RabbitMqMessagingExtensions
         configure(options);
         options.Validate();
 
+        builder.Services.AddSingleton(options);
         builder.Services.AddScoped<TConsumer>();
         builder.Services.AddScoped(sp =>
             new InboxConsumerDecorator<TMessage>(
@@ -93,5 +96,37 @@ public static class RabbitMqMessagingExtensions
                 sp.GetRequiredService<ILogger<RabbitMqConsumerWorker<TMessage, InboxConsumerDecorator<TMessage>>>>()));
 
         return builder;
+    }
+
+    public static async Task ApplyRabbitMqTopologyAsync(
+        this IHost host,
+        CancellationToken cancellationToken = default)
+    {
+        var sp = host.Services;
+
+        var connection      = sp.GetRequiredService<IPersistentRabbitMqConnection>();
+        var publishEntries  = sp.GetRequiredService<IEnumerable<PublishTopologyEntry>>();
+        var consumerOptions = sp.GetRequiredService<IEnumerable<RabbitMqConsumerOptions>>();
+        var logger          = sp.GetRequiredService<ILoggerFactory>().CreateLogger("RabbitMQ.Topology");
+
+        await connection.EnsureConnectedAsync(cancellationToken);
+        var channel = await connection.CreateChannelAsync(cancellationToken: cancellationToken);
+
+        await using (channel)
+        {
+            foreach (var entry in publishEntries)
+            {
+                if (entry.Options is not RabbitMqPublishOptions rmq) continue;
+                var type = rmq.ExchangeType.ToExchangeTypeString();
+                await RabbitMqTopologyProvisioner.DeclareExchangeAsync(
+                    channel, rmq.Destination, type, rmq.Durable, logger, cancellationToken);
+            }
+
+            foreach (var opts in consumerOptions)
+            {
+                await RabbitMqTopologyProvisioner.DeclareConsumerTopologyAsync(
+                    channel, opts, logger, cancellationToken);
+            }
+        }
     }
 }

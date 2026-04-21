@@ -60,4 +60,7 @@ builder.Services.AddOpenTelemetry()
         .AddOtlpExporter());
 
 var host = builder.Build();
+
+await host.ApplyRabbitMqTopologyAsync();
+
 host.Run();

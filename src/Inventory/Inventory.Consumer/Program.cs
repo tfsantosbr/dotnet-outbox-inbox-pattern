@@ -93,6 +93,8 @@ var host = builder.Build();
 
 host.ApplyMigrations();
 
+await host.ApplyRabbitMqTopologyAsync();
+
 await host.RunSeedersAsync();
 
 await host.RunAsync();

@@ -122,20 +122,25 @@ The RabbitMQ implementation enforces the presence of `message-id` and `occurred-
 
 | Property | Type | Default | Description |
 | --- | --- | --- | --- |
-| `Exchange` | `string` | `""` | Exchange to bind to |
-| `Queue` | `string` | `""` | Queue name to consume from |
-| `RoutingKey` | `string` | `""` | Binding routing key |
+| `Exchange` | `string` | — | Exchange to bind to (required) |
+| `Queue` | `string` | — | Queue name to consume from (required) |
+| `ConsumerName` | `string` | — | Logical name for this consumer (required). Used as the `consumer` column in the inbox table when using `AddInboxConsumer`. Use the queue name as a convention. |
+| `RoutingKey` | `string` | `""` | Binding routing key. Required when `ExchangeType` is `Direct` or `Topic`. |
 | `ExchangeType` | `RabbitMqExchangeType` | `Fanout` | Exchange type |
-| `Durable` | `bool` | `false` | Durable queue |
-| `Exclusive` | `bool` | `false` | Exclusive queue |
-| `AutoDelete` | `bool` | `false` | Delete queue when no consumers |
+| `Durable` | `bool` | `false` | Durable queue and exchange |
+| `Exclusive` | `bool` | `false` | Exclusive queue (bound to a single connection) |
+| `AutoDelete` | `bool` | `false` | Delete queue when no consumers remain |
 | `AckMode` | `AckMode` | `Manual` | `Manual` or `AutoOnSuccess` |
+| `PrefetchCount` | `ushort` | `1` | Maximum unacknowledged messages the broker will send before receiving an ack. Increase for higher throughput; keep at `1` for strict ordering. |
+| `EnableDeadLetterQueue` | `bool` | `false` | When `true`, creates a DLQ exchange and queue and configures the queue to route rejected messages there. |
+| `DeadLetterExchange` | `string?` | `{Exchange}.dlq` | Override the auto-generated DLQ exchange name. Only used when `EnableDeadLetterQueue = true`. |
+| `DeadLetterRoutingKey` | `string?` | `{Queue}.dlq` | Override the auto-generated DLQ routing key. Only used when `EnableDeadLetterQueue = true`. |
 
 ---
 
 ## Setup
 
-Call `AddMessaging()` in `Program.cs`, then chain `UseRabbitMq`, `AddPublishOptions`, and `AddConsumer`:
+Call `AddMessaging()` in `Program.cs`, then chain `UseRabbitMq`, `AddPublishOptions`, and `AddConsumer`. After building the app, call `ApplyRabbitMqTopologyAsync()` once to provision the broker topology:
 
 ```csharp
 using Shared.Messaging.Abstractions;
@@ -159,12 +164,29 @@ builder.Services
     .AddConsumer<OrderCreatedConsumer, OrderCreatedIntegrationEvent>(o =>
     {
         o.Exchange     = "orders-created";
-        o.Queue        = "inventory.orders";
+        o.Queue        = "inventory.orders-created";
         o.ExchangeType = RabbitMqExchangeType.Fanout;
         o.Durable      = true;
         o.AckMode      = AckMode.AutoOnSuccess;
+        // Optional: route unprocessable messages to a dead-letter queue
+        o.EnableDeadLetterQueue = true;
     });
+
+var app = builder.Build();
+
+// Provision all exchanges, queues, bindings and DLQs declared above
+await app.ApplyRabbitMqTopologyAsync();
 ```
+
+### Dead-letter queue naming
+
+When `EnableDeadLetterQueue = true`, the library automatically creates:
+
+- Exchange: `{Exchange}.dlq` (Direct)
+- Queue: `{Queue}.dlq`
+- Binding routing key: `{Queue}.dlq`
+
+Override with `DeadLetterExchange` and `DeadLetterRoutingKey` on `RabbitMqConsumerOptions`.
 
 ### `AddPublishOptions<TMessage>`
 
@@ -172,7 +194,18 @@ Registers the routing topology for a message type in `IPublishTopologyRegistry`.
 
 ### `AddConsumer<TConsumer, TMessage>`
 
-Registers `TConsumer` as a scoped service and starts a `RabbitMqConsumerWorker<TMessage, TConsumer>` background service that declares the exchange/queue, binds them, and dispatches messages to `TConsumer.ConsumeAsync`.
+Registers `TConsumer` as a scoped service and starts a `RabbitMqConsumerWorker<TMessage, TConsumer>` background service that dispatches messages to `TConsumer.ConsumeAsync`.
+
+### `ApplyRabbitMqTopologyAsync`
+
+After building the app, call this once to provision all exchanges, queues, bindings and DLQs declared in code. It is the equivalent of `app.ApplyMigrations()` for the broker — no external `definitions.json` import required.
+
+```csharp
+// After builder.Build()
+await app.ApplyRabbitMqTopologyAsync();
+```
+
+The method is idempotent: re-declaring an exchange or queue with the same parameters is safe. It must be called before the host starts accepting requests or processing messages.
 
 ---
 
@@ -203,28 +236,49 @@ public class SomeService(IMessageBus messageBus)
 
 ## Consuming
 
-Implement `IMessageConsumer<TMessage>` and register it with `AddConsumer`:
+Implement `IMessageConsumer<TMessage>` and register it with `AddConsumer`.
+
+### AckMode
+
+| Mode | Behavior |
+| --- | --- |
+| `Manual` (default) | Worker acks/nacks based on the `ConsumerResult` returned by `ConsumeAsync`. Return `ConsumerResult.Ack()` or `ConsumerResult.Nack(requeue)`. |
+| `AutoOnSuccess` | Worker acks automatically when `ConsumeAsync` returns without throwing. On exception, nacks with `requeue: true`. Use when the consumer does not need fine-grained nack control. |
+
+In both modes, an unhandled exception from `ConsumeAsync` produces `Nack(requeue: true)`.
+
+**Invalid or undeserializable payloads** are always discarded with `Nack(requeue: false)`, regardless of `AckMode`. When a DLQ is configured, these messages are routed there automatically by the broker.
+
+### `AckMode.Manual` (default)
 
 ```csharp
-public class OrderCreatedConsumer(ILogger<OrderCreatedConsumer> logger)
-    : IMessageConsumer<OrderCreatedIntegrationEvent>
+public class OrderCreatedConsumer : IMessageConsumer<OrderCreatedIntegrationEvent>
 {
-    public async Task ConsumeAsync(
+    public async Task<ConsumerResult> ConsumeAsync(
         OrderCreatedIntegrationEvent message,
         IMessageContext context,
         CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Order received: {OrderId}", message.OrderId);
-
         // ... process message ...
 
-        // With AckMode.Manual, acknowledge explicitly:
-        await context.AckAsync(cancellationToken: cancellationToken);
+        return ConsumerResult.Ack();
+        // or: return ConsumerResult.Nack(requeue: false);
     }
 }
 ```
 
-With `AckMode.AutoOnSuccess`, the worker calls `AckAsync` automatically when `ConsumeAsync` completes without throwing. On exception, it calls `NackAsync` with `requeue: true`.
+### `AckMode.AutoOnSuccess`
+
+```csharp
+.AddConsumer<OrderCreatedConsumer, OrderCreatedIntegrationEvent>(o =>
+{
+    o.Exchange = "orders-created";
+    o.Queue    = "inventory.orders-created";
+    o.AckMode  = AckMode.AutoOnSuccess; // ack automatically on success
+});
+```
+
+With `AutoOnSuccess`, the worker acks after a successful return and nacks on exception — no need to return a `ConsumerResult`.
 
 ---
 

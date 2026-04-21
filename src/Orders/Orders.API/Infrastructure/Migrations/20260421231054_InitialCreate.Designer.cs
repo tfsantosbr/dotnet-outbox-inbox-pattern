@@ -12,8 +12,8 @@ using Orders.API.Infrastructure;
 namespace Orders.API.Infrastructure.Migrations
 {
     [DbContext(typeof(OrdersDbContext))]
-    [Migration("20260401063341_AddOutboxMessageTable")]
-    partial class AddOutboxMessageTable
+    [Migration("20260421231054_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -46,46 +46,57 @@ namespace Orders.API.Infrastructure.Migrations
                     b.ToTable("orders", "orders");
                 });
 
-            modelBuilder.Entity("Shared.Outbox.Abstractions.OutboxMessage", b =>
+            modelBuilder.Entity("Shared.Outbox.Abstractions.Models.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<string>("Content")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("content");
 
                     b.Property<string>("Destination")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("destination");
 
                     b.Property<string>("Error")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("error");
 
-                    b.Property<DateTime?>("ErrorHandledOn")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateTime?>("ErrorHandledOnUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("error_handled_on_utc");
 
                     b.Property<string>("Headers")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("headers");
 
-                    b.Property<DateTime>("OccurredOn")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateTime>("OccurredOnUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_on_utc");
 
-                    b.Property<DateTime?>("ProcessedOn")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateTime?>("ProcessedOnUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_on_utc");
 
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("type");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ErrorHandledOn");
+                    b.HasIndex("ErrorHandledOnUtc");
 
-                    b.HasIndex("OccurredOn");
+                    b.HasIndex("OccurredOnUtc")
+                        .HasDatabaseName("IX_outbox_messages_pending")
+                        .HasFilter("\"processed_on_utc\" IS NULL");
 
-                    b.HasIndex("ProcessedOn");
+                    b.HasIndex("ProcessedOnUtc");
 
                     b.ToTable("outbox_messages", "orders");
                 });

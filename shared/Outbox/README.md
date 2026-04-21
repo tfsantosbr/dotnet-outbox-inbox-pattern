@@ -24,7 +24,7 @@ Command Handler
 | Project | Responsibility |
 | --- | --- |
 | `Shared.Outbox.Abstractions` | `IOutboxPublisher`, `IOutboxStorage`, `IOutboxDbContext`, `OutboxMessage` |
-| `Shared.Outbox` | EF Core config, publisher implementation, background processor, storage, metrics |
+| `Shared.Outbox.EntityFrameworkCore.PostgreSQL` | EF Core config, publisher implementation, background processor, storage, metrics |
 
 ---
 
@@ -313,7 +313,7 @@ using Shared.Outbox.Metrics;
 
 builder.Services.AddOpenTelemetry()
     .WithMetrics(metrics => metrics
-        .AddMeter(OutboxInstrumentation.MeterName));  // "Shared.Outbox"
+        .AddMeter(OutboxInstrumentation.MeterName));  // "Outbox"
 ```
 
 ### Available instruments
